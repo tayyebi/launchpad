@@ -6,6 +6,5 @@ build/
 .idea/
 .vscode/
 .metadata
-*.lock
 *.log
 .DS_Store

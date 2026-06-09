@@ -188,7 +188,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
             barRods: [
               BarChartRodData(
                 toY: entry.value,
-                color: entry.key.color,
+                color: entry.value.color,
                 width: 20,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(4),
