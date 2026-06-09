@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'ui/launchpad/launchpad_screen.dart';
 
@@ -7,11 +8,13 @@ class LaunchpadApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Launchpad',
-      theme: AppTheme.dark,
-      debugShowCheckedModeBanner: false,
-      home: const LaunchpadScreen(),
+    return ProviderScope(
+      child: MaterialApp(
+        title: 'Launchpad',
+        theme: AppTheme.dark,
+        debugShowCheckedModeBanner: false,
+        home: const LaunchpadScreen(),
+      ),
     );
   }
 }
