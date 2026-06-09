@@ -22,7 +22,7 @@ jobs:
       - name: Regenerate platform scaffolding
         run: |
           mv lib lib_backup
-          flutter create --project-name launchpad --platforms android --force .
+          flutter create --project-name launchpad --platforms android --overwrite .
           rm -rf lib
           mv lib_backup lib
 
