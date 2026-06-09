@@ -1,0 +1,17 @@
+import 'package:flutter/material.dart';
+import 'core/theme/app_theme.dart';
+import 'ui/launchpad/launchpad_screen.dart';
+
+class LaunchpadApp extends StatelessWidget {
+  const LaunchpadApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Launchpad',
+      theme: AppTheme.dark,
+      debugShowCheckedModeBanner: false,
+      home: const LaunchpadScreen(),
+    );
+  }
+}
