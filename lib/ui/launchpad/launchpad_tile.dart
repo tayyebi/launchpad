@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../core/utils/color_utils.dart';
+import '../../core/utils/color_utils.dart';
 
 class LaunchpadTile extends StatefulWidget {
   final String name;
