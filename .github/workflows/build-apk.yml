@@ -19,6 +19,13 @@ jobs:
           flutter-version: '3.27.4'
           channel: 'stable'
 
+      - name: Regenerate platform scaffolding
+        run: |
+          mv lib lib_backup
+          flutter create --project-name launchpad --platforms android --force .
+          rm -rf lib
+          mv lib_backup lib
+
       - run: flutter pub get
 
       - name: Build debug APK (self-signed)
@@ -33,7 +40,6 @@ jobs:
 
       - name: Build release APK (self-signed)
         run: |
-          mkdir -p android/key.properties
           echo "storePassword=android" > android/key.properties
           echo "keyPassword=android" >> android/key.properties
           echo "keyAlias=release" >> android/key.properties
