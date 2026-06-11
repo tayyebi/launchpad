@@ -65,20 +65,20 @@ class LaunchpadScreen extends ConsumerWidget {
           for (int i = 0; i < tiles; i++) {
             if (i < tasks.length) {
               final task = tasks[i];
-              final isActive = timerState.activeTaskId == task.id;
+              final isActive = timerState.activeTaskName == task.name;
               final elapsed =
                   isActive ? _formatElapsed(timerState.elapsed) : null;
-              final dailyTotal = dailySummary[task.id] ?? 0;
+              final dailyTotal = dailySummary[task.name] ?? 0;
 
               children.add(LaunchpadTile(
-                key: ValueKey(task.id),
+                key: ValueKey(task.name),
                 name: task.name,
                 color: task.color,
                 isActive: isActive,
                 elapsed: elapsed,
                 dailyTotal: showDaily ? dailyTotal : null,
                 onTap: () =>
-                    ref.read(timerProvider.notifier).toggleTask(task.id),
+                    ref.read(timerProvider.notifier).toggleTask(task.name),
               ));
             } else {
               children.add(Container(
@@ -111,7 +111,7 @@ class LaunchpadScreen extends ConsumerWidget {
 
                 final repo = ref.read(taskRepositoryProvider);
                 final positions = reordered.asMap().entries
-                    .map((e) => MapEntry(e.value.id, e.key))
+                    .map((e) => MapEntry(e.value.name, e.key))
                     .toList();
                 await repo.updateGridPositions(positions);
                 ref.invalidate(tasksProvider);
@@ -120,7 +120,7 @@ class LaunchpadScreen extends ConsumerWidget {
                     await ref.read(tasksProvider.future);
                 WidgetService.updateWidget(
                   tasks: updatedTasks,
-                  activeTaskId: timerState.activeTaskId,
+                  activeTaskName: timerState.activeTaskName,
                 );
               },
             ),

@@ -5,13 +5,12 @@ import '../data/models/task.dart';
 class WidgetService {
   static Future<void> updateWidget({
     required List<Task> tasks,
-    String? activeTaskId,
+    String? activeTaskName,
   }) async {
     final data = tasks.map((t) => {
-      'id': t.id,
       'name': t.name,
       'color': t.color,
-      'isActive': t.id == activeTaskId,
+      'isActive': t.name == activeTaskName,
     }).toList();
 
     await HomeWidget.saveWidgetData('launchpad_tasks', jsonEncode(data));

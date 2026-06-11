@@ -41,14 +41,12 @@ class LaunchpadWidgetProvider : AppWidgetProvider() {
             if (!tasksJson.isNullOrEmpty()) {
                 try {
                     val tasks = JSONArray(tasksJson)
-                    views.setTextViewText(R.id.widget_title, "Launchpad")
 
                     val count = minOf(tasks.length(), 9)
                     for (i in 0 until count) {
                         val task = tasks.getJSONObject(i)
                         val name = task.getString("name")
                         val colorInt = task.getInt("color")
-                        val taskId = task.getString("id")
                         val isActive = task.optBoolean("isActive", false)
 
                         views.setViewVisibility(cellIds[i], android.view.View.VISIBLE)
@@ -57,15 +55,14 @@ class LaunchpadWidgetProvider : AppWidgetProvider() {
                         val bgColor = if (isActive) {
                             lightenColor(colorInt, 0.3f)
                         } else {
-                            darkenColor(colorInt, 0.4f)
+                            darkenColor(colorInt, 0.6f)
                         }
                         views.setInt(cellIds[i], "setBackgroundColor", bgColor)
-
                         views.setTextColor(nameIds[i], Color.WHITE)
 
                         val intent = Intent(context, MainActivity::class.java).apply {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                            putExtra("task_id", taskId)
+                            putExtra("task_name", name)
                         }
                         val pendingIntent = PendingIntent.getActivity(
                             context, i, intent,
@@ -74,10 +71,12 @@ class LaunchpadWidgetProvider : AppWidgetProvider() {
                         views.setOnClickPendingIntent(cellIds[i], pendingIntent)
                     }
                 } catch (_: Exception) {
-                    views.setTextViewText(R.id.widget_title, "Error")
+                    views.setViewVisibility(cellIds[0], android.view.View.VISIBLE)
+                    views.setTextViewText(nameIds[0], "Error")
                 }
             } else {
-                views.setTextViewText(R.id.widget_title, "No tasks")
+                views.setViewVisibility(cellIds[0], android.view.View.VISIBLE)
+                views.setTextViewText(nameIds[0], "No tasks")
             }
 
             appWidgetManager.updateAppWidget(appWidgetId, views)

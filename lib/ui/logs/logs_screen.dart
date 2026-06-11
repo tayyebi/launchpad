@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../providers/entry_providers.dart';
 import '../../providers/task_providers.dart';
 import '../../core/utils/color_utils.dart';
@@ -14,7 +17,16 @@ class LogsScreen extends ConsumerWidget {
     final tasksAsync = ref.watch(tasksProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Logs')),
+      appBar: AppBar(
+        title: const Text('Logs'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.file_download),
+            tooltip: 'Export CSV',
+            onPressed: () => _exportCsv(context, ref),
+          ),
+        ],
+      ),
       body: entriesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -26,7 +38,7 @@ class LogsScreen extends ConsumerWidget {
           }
 
           final tasks = tasksAsync.whenOrNull(data: (t) => t) ?? [];
-          final taskMap = {for (final t in tasks) t.id: t};
+          final taskMap = {for (final t in tasks) t.name: t};
 
           final grouped = <String, List<MapEntry<int, dynamic>>>{};
           for (int i = 0; i < entries.length; i++) {
@@ -63,8 +75,8 @@ class LogsScreen extends ConsumerWidget {
                   ),
                   ...dayEntry.value.map((entry) {
                     final e = entry.value;
-                    final task = taskMap[e.taskId];
-                    final clr = task != null ? colorFromInt(task.color) : Colors.grey;
+                    final task = taskMap[e.taskName];
+                    final clr = task != null ? colorFromInt(task.color) : colorFromInt(colorFromName(e.taskName));
                     final durStr = e.durationSeconds != null
                         ? _formatDuration(e.durationSeconds!)
                         : '--:--';
@@ -86,7 +98,7 @@ class LogsScreen extends ConsumerWidget {
                           ),
                         ),
                         title: Text(
-                          task?.name ?? 'Unknown',
+                          e.taskName,
                           style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
                         subtitle: Text(
@@ -113,6 +125,52 @@ class LogsScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  Future<void> _exportCsv(BuildContext context, WidgetRef ref) async {
+    final entries = await ref.read(allEntriesProvider.future);
+
+    if (entries.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No entries to export')),
+        );
+      }
+      return;
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('Date,Start,End,Duration (seconds),Task');
+
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    final timeFormat = DateFormat('HH:mm:ss');
+
+    for (final e in entries) {
+      final date = dateFormat.format(e.startTime);
+      final start = timeFormat.format(e.startTime);
+      final end = e.endTime != null ? timeFormat.format(e.endTime!) : '';
+      final dur = e.durationSeconds?.toString() ?? '';
+      final task = _escapeCsv(e.taskName);
+      buffer.writeln('$date,$start,$end,$dur,$task');
+    }
+
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/launchpad_logs.csv');
+    await file.writeAsString(buffer.toString());
+
+    if (context.mounted) {
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'Launchpad Logs',
+      );
+    }
+  }
+
+  String _escapeCsv(String value) {
+    if (value.contains(',') || value.contains('"') || value.contains('\n')) {
+      return '"${value.replaceAll('"', '""')}"';
+    }
+    return value;
   }
 
   String _formatDuration(int seconds) {

@@ -7,6 +7,7 @@ import '../../data/repositories/task_repository.dart';
 import '../../core/utils/color_utils.dart';
 import '../../services/widget_service.dart';
 import '../launchpad/task_config_dialog.dart';
+import '../logs/logs_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -89,14 +90,14 @@ class SettingsScreen extends ConsumerWidget {
                       }
                       return Column(
                         children: tasks.map((task) {
-                          final active = ref.watch(timerProvider).activeTaskId == task.id;
+                          final active = ref.watch(timerProvider).activeTaskName == task.name;
                           return ListTile(
                             dense: true,
                             leading: Container(
                               width: 24,
                               height: 24,
                               decoration: BoxDecoration(
-                                color: Color(task.color),
+                                color: colorFromInt(task.color),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                             ),
@@ -118,6 +119,18 @@ class SettingsScreen extends ConsumerWidget {
                     },
                   ),
                 ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.description),
+              title: const Text('View Logs'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LogsScreen()),
               ),
             ),
           ),
@@ -158,7 +171,6 @@ class SettingsScreen extends ConsumerWidget {
       final repo = ref.read(taskRepositoryProvider);
       await repo.create(
         name: nameCtrl.text.trim(),
-        color: colorFromName(nameCtrl.text.trim()),
       );
       ref.invalidate(tasksProvider);
       final tasks = await ref.read(tasksProvider.future);

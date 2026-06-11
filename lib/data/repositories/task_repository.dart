@@ -1,9 +1,6 @@
 import 'package:sqflite/sqflite.dart';
-import 'package:uuid/uuid.dart';
 import '../../core/database/database.dart';
 import '../models/task.dart';
-
-const _uuid = Uuid();
 
 class TaskRepository {
   final AppDatabase _db = AppDatabase.instance;
@@ -13,15 +10,15 @@ class TaskRepository {
     return maps.map(Task.fromMap).toList();
   }
 
-  Future<Task?> getById(String id) async {
-    final maps = await _db.db.query('tasks', where: 'id = ?', whereArgs: [id]);
+  Future<Task?> getByName(String name) async {
+    final maps =
+        await _db.db.query('tasks', where: 'name = ?', whereArgs: [name]);
     if (maps.isEmpty) return null;
     return Task.fromMap(maps.first);
   }
 
   Future<Task> create({
     required String name,
-    required int color,
     int? gridPosition,
   }) async {
     final now = DateTime.now();
@@ -32,9 +29,7 @@ class TaskRepository {
       gridPosition = count;
     }
     final task = Task(
-      id: _uuid.v4(),
       name: name,
-      color: color,
       gridPosition: gridPosition,
       createdAt: now,
       updatedAt: now,
@@ -43,18 +38,21 @@ class TaskRepository {
     return task;
   }
 
-  Future<void> update(Task task) async {
+  Future<void> update(String oldName, String newName) async {
+    final now = DateTime.now().toIso8601String();
     await _db.db.update(
       'tasks',
-      task.copyWith(updatedAt: DateTime.now()).toMap(),
-      where: 'id = ?',
-      whereArgs: [task.id],
+      {
+        'name': newName,
+        'updated_at': now,
+      },
+      where: 'name = ?',
+      whereArgs: [oldName],
     );
   }
 
-  Future<void> delete(String id) async {
-    await _db.db.delete('time_entries', where: 'task_id = ?', whereArgs: [id]);
-    await _db.db.delete('tasks', where: 'id = ?', whereArgs: [id]);
+  Future<void> delete(String name) async {
+    await _db.db.delete('tasks', where: 'name = ?', whereArgs: [name]);
   }
 
   Future<int> count() async {
@@ -68,12 +66,12 @@ class TaskRepository {
     return maps.map(Task.fromMap).toList();
   }
 
-  Future<void> updateGridPosition(String id, int newPosition) async {
+  Future<void> updateGridPosition(String name, int newPosition) async {
     await _db.db.update(
       'tasks',
       {'grid_position': newPosition, 'updated_at': DateTime.now().toIso8601String()},
-      where: 'id = ?',
-      whereArgs: [id],
+      where: 'name = ?',
+      whereArgs: [name],
     );
   }
 
@@ -84,7 +82,7 @@ class TaskRepository {
       batch.update(
         'tasks',
         {'grid_position': entry.value, 'updated_at': now},
-        where: 'id = ?',
+        where: 'name = ?',
         whereArgs: [entry.key],
       );
     }

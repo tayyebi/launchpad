@@ -18,11 +18,11 @@ class EntryRepository {
     return maps.map(TimeEntry.fromMap).toList();
   }
 
-  Future<List<TimeEntry>> getByTaskId(String taskId) async {
+  Future<List<TimeEntry>> getByTaskName(String taskName) async {
     final maps = await _db.db.query(
       'time_entries',
-      where: 'task_id = ?',
-      whereArgs: [taskId],
+      where: 'task_name = ?',
+      whereArgs: [taskName],
       orderBy: 'start_time DESC',
     );
     return maps.map(TimeEntry.fromMap).toList();
@@ -38,11 +38,11 @@ class EntryRepository {
     return TimeEntry.fromMap(maps.first);
   }
 
-  Future<TimeEntry> startEntry(String taskId) async {
+  Future<TimeEntry> startEntry(String taskName) async {
     final now = DateTime.now();
     final entry = TimeEntry(
       id: _uuid.v4(),
-      taskId: taskId,
+      taskName: taskName,
       startTime: now,
       createdAt: now,
       updatedAt: now,
@@ -51,7 +51,7 @@ class EntryRepository {
     return entry;
   }
 
-  Future<TimeEntry> stopEntry(String entryId) async {
+  Future<TimeEntry> stopEntry(String entryId, {int? elapsedSeconds}) async {
     final now = DateTime.now();
     final maps = await _db.db.query(
       'time_entries',
@@ -62,7 +62,7 @@ class EntryRepository {
     final entry = TimeEntry.fromMap(maps.first);
     if (entry.endTime != null) return entry;
 
-    final duration = now.difference(entry.startTime).inSeconds;
+    final duration = elapsedSeconds ?? now.difference(entry.startTime).inSeconds;
     final updated = entry.copyWith(
       endTime: now,
       durationSeconds: duration,
@@ -107,15 +107,15 @@ class EntryRepository {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
     final maps = await _db.db.rawQuery('''
-      SELECT task_id, COALESCE(SUM(duration_seconds), 0) as total
+      SELECT task_name, COALESCE(SUM(duration_seconds), 0) as total
       FROM time_entries
       WHERE start_time >= ? AND start_time < ? AND duration_seconds IS NOT NULL
-      GROUP BY task_id
+      GROUP BY task_name
     ''', [start.toIso8601String(), end.toIso8601String()]);
 
     final result = <String, int>{};
     for (final m in maps) {
-      result[m['task_id'] as String] = m['total'] as int;
+      result[m['task_name'] as String] = m['total'] as int;
     }
     return result;
   }
@@ -123,24 +123,24 @@ class EntryRepository {
   Future<Map<String, int>> getWeeklySummary(DateTime weekStart) async {
     final end = weekStart.add(const Duration(days: 7));
     final maps = await _db.db.rawQuery('''
-      SELECT task_id, COALESCE(SUM(duration_seconds), 0) as total
+      SELECT task_name, COALESCE(SUM(duration_seconds), 0) as total
       FROM time_entries
       WHERE start_time >= ? AND start_time < ? AND duration_seconds IS NOT NULL
-      GROUP BY task_id
+      GROUP BY task_name
     ''', [weekStart.toIso8601String(), end.toIso8601String()]);
 
     final result = <String, int>{};
     for (final m in maps) {
-      result[m['task_id'] as String] = m['total'] as int;
+      result[m['task_name'] as String] = m['total'] as int;
     }
     return result;
   }
 
   Future<List<Map<String, dynamic>>> getEntriesInRange(DateTime start, DateTime end) async {
     return await _db.db.rawQuery('''
-      SELECT time_entries.*, tasks.name as task_name, tasks.color as task_color
+      SELECT time_entries.*, tasks.name as task_name_ref
       FROM time_entries
-      INNER JOIN tasks ON tasks.id = time_entries.task_id
+      LEFT JOIN tasks ON tasks.name = time_entries.task_name
       WHERE time_entries.start_time >= ? AND time_entries.start_time < ?
       ORDER BY time_entries.start_time DESC
     ''', [start.toIso8601String(), end.toIso8601String()]);
@@ -150,9 +150,8 @@ class EntryRepository {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
     return await _db.db.rawQuery('''
-      SELECT time_entries.*, tasks.name as task_name, tasks.color as task_color
+      SELECT time_entries.*
       FROM time_entries
-      INNER JOIN tasks ON tasks.id = time_entries.task_id
       WHERE time_entries.start_time >= ? AND time_entries.start_time < ?
       ORDER BY time_entries.start_time DESC
     ''', [start.toIso8601String(), end.toIso8601String()]);

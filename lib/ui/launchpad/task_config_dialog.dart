@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/utils/color_utils.dart';
 import '../../data/models/task.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../providers/task_providers.dart';
@@ -64,10 +63,10 @@ class _TaskConfigDialogState extends ConsumerState<TaskConfigDialog> {
     if (name.isEmpty) return;
 
     final repo = ref.read(taskRepositoryProvider);
-    await repo.update(widget.task.copyWith(
-      name: name,
-      color: colorFromName(name),
-    ));
+    final oldName = widget.task.name;
+    if (oldName != name) {
+      await repo.update(oldName, name);
+    }
     ref.invalidate(tasksProvider);
     final tasks = await ref.read(tasksProvider.future);
     WidgetService.updateWidget(tasks: tasks);
@@ -79,7 +78,7 @@ class _TaskConfigDialogState extends ConsumerState<TaskConfigDialog> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Task'),
-        content: Text('Delete "${widget.task.name}" and all its entries?'),
+        content: Text('Delete "${widget.task.name}"?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
@@ -91,7 +90,7 @@ class _TaskConfigDialogState extends ConsumerState<TaskConfigDialog> {
     );
     if (confirmed == true) {
       final repo = ref.read(taskRepositoryProvider);
-      await repo.delete(widget.task.id);
+      await repo.delete(widget.task.name);
       ref.invalidate(tasksProvider);
       final tasks = await ref.read(tasksProvider.future);
       WidgetService.updateWidget(tasks: tasks);

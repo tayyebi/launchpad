@@ -1,6 +1,6 @@
 class TimeEntry {
   final String id;
-  final String taskId;
+  final String taskName;
   final DateTime startTime;
   final DateTime? endTime;
   final int? durationSeconds;
@@ -10,7 +10,7 @@ class TimeEntry {
 
   const TimeEntry({
     required this.id,
-    required this.taskId,
+    required this.taskName,
     required this.startTime,
     this.endTime,
     this.durationSeconds,
@@ -23,7 +23,7 @@ class TimeEntry {
 
   Map<String, dynamic> toMap() => {
         'id': id,
-        'task_id': taskId,
+        'task_name': taskName,
         'start_time': startTime.toIso8601String(),
         'end_time': endTime?.toIso8601String(),
         'duration_seconds': durationSeconds,
@@ -34,7 +34,7 @@ class TimeEntry {
 
   factory TimeEntry.fromMap(Map<String, dynamic> map) => TimeEntry(
         id: map['id'] as String,
-        taskId: map['task_id'] as String,
+        taskName: map['task_name'] as String,
         startTime: DateTime.parse(map['start_time'] as String),
         endTime: map['end_time'] != null
             ? DateTime.parse(map['end_time'] as String)
@@ -47,7 +47,7 @@ class TimeEntry {
 
   TimeEntry copyWith({
     String? id,
-    String? taskId,
+    String? taskName,
     DateTime? startTime,
     DateTime? endTime,
     int? durationSeconds,
@@ -57,7 +57,7 @@ class TimeEntry {
   }) =>
       TimeEntry(
         id: id ?? this.id,
-        taskId: taskId ?? this.taskId,
+        taskName: taskName ?? this.taskName,
         startTime: startTime ?? this.startTime,
         endTime: endTime ?? this.endTime,
         durationSeconds: durationSeconds ?? this.durationSeconds,

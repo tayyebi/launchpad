@@ -9,26 +9,26 @@ import 'task_providers.dart';
 
 class TimerState {
   final TimeEntry? activeEntry;
-  final String? activeTaskId;
+  final String? activeTaskName;
   final Duration elapsed;
   final bool isLoading;
 
   const TimerState({
     this.activeEntry,
-    this.activeTaskId,
+    this.activeTaskName,
     this.elapsed = Duration.zero,
     this.isLoading = false,
   });
 
   TimerState copyWith({
     TimeEntry? activeEntry,
-    String? activeTaskId,
+    String? activeTaskName,
     Duration? elapsed,
     bool? isLoading,
   }) =>
       TimerState(
         activeEntry: activeEntry ?? this.activeEntry,
-        activeTaskId: activeTaskId ?? this.activeTaskId,
+        activeTaskName: activeTaskName ?? this.activeTaskName,
         elapsed: elapsed ?? this.elapsed,
         isLoading: isLoading ?? this.isLoading,
       );
@@ -50,7 +50,7 @@ class TimerNotifier extends StateNotifier<TimerState> {
     if (entry != null) {
       state = state.copyWith(
         activeEntry: entry,
-        activeTaskId: entry.taskId,
+        activeTaskName: entry.taskName,
         elapsed: DateTime.now().difference(entry.startTime),
       );
       _startTicking();
@@ -69,18 +69,18 @@ class TimerNotifier extends StateNotifier<TimerState> {
     });
   }
 
-  Future<void> toggleTask(String taskId) async {
+  Future<void> toggleTask(String taskName) async {
     if (state.isLoading) return;
     state = state.copyWith(isLoading: true);
 
     try {
-      if (state.activeTaskId == taskId) {
+      if (state.activeTaskName == taskName) {
         await _stopTimer();
       } else {
         if (state.activeEntry != null) {
           await _stopTimer();
         }
-        await _startTimer(taskId);
+        await _startTimer(taskName);
       }
     } finally {
       state = state.copyWith(isLoading: false);
@@ -89,16 +89,16 @@ class TimerNotifier extends StateNotifier<TimerState> {
       final tasks = await _taskRepo.getActiveTasks();
       WidgetService.updateWidget(
         tasks: tasks,
-        activeTaskId: state.activeTaskId,
+        activeTaskName: state.activeTaskName,
       );
     }
   }
 
-  Future<void> _startTimer(String taskId) async {
-    final entry = await _entryRepo.startEntry(taskId);
+  Future<void> _startTimer(String taskName) async {
+    final entry = await _entryRepo.startEntry(taskName);
     state = state.copyWith(
       activeEntry: entry,
-      activeTaskId: taskId,
+      activeTaskName: taskName,
       elapsed: Duration.zero,
     );
     _startTicking();
@@ -107,7 +107,10 @@ class TimerNotifier extends StateNotifier<TimerState> {
   Future<void> _stopTimer() async {
     if (state.activeEntry == null) return;
     _tickTimer?.cancel();
-    await _entryRepo.stopEntry(state.activeEntry!.id);
+    await _entryRepo.stopEntry(
+      state.activeEntry!.id,
+      elapsedSeconds: state.elapsed.inSeconds,
+    );
     state = const TimerState();
   }
 

@@ -1,8 +1,5 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:uuid/uuid.dart';
-
-const _uuid = Uuid();
 
 class AppDatabase {
   static final AppDatabase _instance = AppDatabase._();
@@ -18,17 +15,16 @@ class AppDatabase {
 
     _db = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE tasks (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        color INTEGER NOT NULL,
+        name TEXT PRIMARY KEY,
         grid_position INTEGER NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -38,19 +34,18 @@ class AppDatabase {
     await db.execute('''
       CREATE TABLE time_entries (
         id TEXT PRIMARY KEY,
-        task_id TEXT NOT NULL,
+        task_name TEXT NOT NULL,
         start_time TEXT NOT NULL,
         end_time TEXT,
         duration_seconds INTEGER,
         synced INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        FOREIGN KEY (task_id) REFERENCES tasks(id)
+        updated_at TEXT NOT NULL
       )
     ''');
 
     await db.execute(
-        'CREATE INDEX idx_entries_task_id ON time_entries(task_id)');
+        'CREATE INDEX idx_entries_task_name ON time_entries(task_name)');
     await db.execute(
         'CREATE INDEX idx_entries_start_time ON time_entries(start_time)');
     await db.execute(
@@ -59,26 +54,77 @@ class AppDatabase {
     _seedDefaultTasks(db);
   }
 
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.transaction((txn) async {
+        await txn.execute('ALTER TABLE tasks RENAME TO tasks_old');
+        await txn.execute('ALTER TABLE time_entries RENAME TO time_entries_old');
+
+        await txn.execute('''
+          CREATE TABLE tasks (
+            name TEXT PRIMARY KEY,
+            grid_position INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          )
+        ''');
+
+        await txn.execute('''
+          CREATE TABLE time_entries (
+            id TEXT PRIMARY KEY,
+            task_name TEXT NOT NULL,
+            start_time TEXT NOT NULL,
+            end_time TEXT,
+            duration_seconds INTEGER,
+            synced INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          )
+        ''');
+
+        await txn.execute('''
+          INSERT INTO tasks (name, grid_position, created_at, updated_at)
+          SELECT name, grid_position, created_at, updated_at FROM tasks_old
+        ''');
+
+        await txn.execute('''
+          INSERT INTO time_entries (id, task_name, start_time, end_time, duration_seconds, synced, created_at, updated_at)
+          SELECT te.id, COALESCE(t.name, te.task_id), te.start_time, te.end_time, te.duration_seconds, te.synced, te.created_at, te.updated_at
+          FROM time_entries_old te
+          LEFT JOIN tasks_old t ON t.id = te.task_id
+        ''');
+
+        await txn.execute('DROP TABLE IF EXISTS time_entries_old');
+        await txn.execute('DROP TABLE IF EXISTS tasks_old');
+      });
+
+      await db.execute(
+          'CREATE INDEX idx_entries_task_name ON time_entries(task_name)');
+      await db.execute(
+          'CREATE INDEX idx_entries_start_time ON time_entries(start_time)');
+      await db.execute(
+          'CREATE INDEX idx_entries_synced ON time_entries(synced)');
+    }
+  }
+
   Future<void> _seedDefaultTasks(Database db) async {
     final now = DateTime.now().toIso8601String();
     final defaults = [
-      ('Work', 0xFF4CAF50, 0),
-      ('Study', 0xFF2196F3, 1),
-      ('Exercise', 0xFFFF5722, 2),
-      ('Reading', 0xFF9C27B0, 3),
-      ('Music', 0xFFFFC107, 4),
-      ('Gaming', 0xFFE91E63, 5),
-      ('Social', 0xFF00BCD4, 6),
-      ('Cooking', 0xFFFF9800, 7),
-      ('Chores', 0xFF607D8B, 8),
+      'Work',
+      'Study',
+      'Exercise',
+      'Reading',
+      'Music',
+      'Gaming',
+      'Social',
+      'Cooking',
+      'Chores',
     ];
 
-    for (final t in defaults) {
+    for (int i = 0; i < defaults.length; i++) {
       await db.insert('tasks', {
-        'id': _uuid.v4(),
-        'name': t.$1,
-        'color': t.$2,
-        'grid_position': t.$3,
+        'name': defaults[i],
+        'grid_position': i,
         'created_at': now,
         'updated_at': now,
       });

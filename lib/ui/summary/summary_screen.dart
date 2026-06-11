@@ -6,6 +6,7 @@ import '../../data/repositories/entry_repository.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../core/utils/color_utils.dart';
 
+
 class SummaryScreen extends ConsumerStatefulWidget {
   const SummaryScreen({super.key});
 
@@ -106,7 +107,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
     final entryRepo = EntryRepository();
     final taskRepo = TaskRepository();
     final tasks = await taskRepo.getActiveTasks();
-    final taskMap = {for (final t in tasks) t.id: t};
+    final taskMap = {for (final t in tasks) t.name: t};
 
     Map<String, int> raw;
     DateTime rangeStart, rangeEnd;
@@ -185,7 +186,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
       for (final e in dayEntry.value) {
         final entryId = e['id'] as String;
         final taskName = e['task_name'] as String? ?? 'Unknown';
-        final taskColor = colorFromInt(e['task_color'] as int? ?? 0xFF4CAF50);
+        final taskColor = colorFromInt(colorFromName(taskName));
         final startTime = DateTime.parse(e['start_time'] as String);
         final endTimeStr = e['end_time'] as String?;
         final endTime =
