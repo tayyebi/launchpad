@@ -1,13 +1,13 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/task_providers.dart';
 import '../../providers/timer_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/entry_providers.dart';
 import '../settings/settings_screen.dart';
-import '../logs/logs_screen.dart';
 import '../summary/summary_screen.dart';
 import 'launchpad_tile.dart';
-import 'task_config_dialog.dart';
 
 class LaunchpadScreen extends ConsumerWidget {
   const LaunchpadScreen({super.key});
@@ -26,49 +26,42 @@ class LaunchpadScreen extends ConsumerWidget {
     final timerState = ref.watch(timerProvider);
     final settings = ref.watch(settingsProvider);
     final gridSize = settings.gridSize;
+    final dailySummaryAsync = ref.watch(dailySummaryProvider);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              color: Colors.black.withAlpha(80),
+            ),
+          ),
+        ),
         title: const Text('Launchpad'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            tooltip: 'Logs',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const LogsScreen()),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.bar_chart),
-            tooltip: 'Summary',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SummaryScreen()),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: 'Settings',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            ),
-          ),
-        ],
       ),
       body: tasksAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (tasks) {
+          final dailySummary =
+              dailySummaryAsync.whenOrNull(data: (d) => d) ?? {};
+          final showDaily = gridSize <= 3;
+
           if (tasks.isEmpty) {
             return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.dashboard_customize, size: 64, color: Colors.white24),
+                  Icon(Icons.dashboard_customize,
+                      size: 64, color: Colors.white24),
                   SizedBox(height: 16),
-                  Text('No tasks yet', style: TextStyle(color: Colors.white54, fontSize: 18)),
+                  Text('No tasks yet',
+                      style:
+                          TextStyle(color: Colors.white54, fontSize: 18)),
                 ],
               ),
             );
@@ -83,7 +76,8 @@ class LaunchpadScreen extends ConsumerWidget {
           return Padding(
             padding: const EdgeInsets.all(12),
             child: GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate:
+                  SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: gridSize,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
@@ -104,24 +98,67 @@ class LaunchpadScreen extends ConsumerWidget {
                   );
                 }
 
-                final isActive = timerState.activeTaskId == task.id;
-                final elapsed = isActive ? _formatElapsed(timerState.elapsed) : null;
+                final isActive =
+                    timerState.activeTaskId == task.id;
+                final elapsed = isActive
+                    ? _formatElapsed(timerState.elapsed)
+                    : null;
+                final dailyTotal = dailySummary[task.id] ?? 0;
 
                 return LaunchpadTile(
                   name: task.name,
                   color: task.color,
                   isActive: isActive,
                   elapsed: elapsed,
-                  onTap: () => ref.read(timerProvider.notifier).toggleTask(task.id),
-                  onLongPress: () => showDialog(
-                    context: context,
-                    builder: (_) => TaskConfigDialog(task: task),
-                  ),
+                  dailyTotal:
+                      showDaily ? dailyTotal : null,
+                  onTap: () => ref
+                      .read(timerProvider.notifier)
+                      .toggleTask(task.id),
                 );
               },
             ),
           );
         },
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.only(bottom: 24, left: 24, right: 24),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.black.withAlpha(180),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.bar_chart),
+                    tooltip: 'Summary',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const SummaryScreen()),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    tooltip: 'Settings',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const SettingsScreen()),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

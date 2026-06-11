@@ -20,34 +20,21 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Summary'),
-        actions: [
-          SegmentedButton<bool>(
-            segments: const [
-              ButtonSegment(value: false, label: Text('Day')),
-              ButtonSegment(value: true, label: Text('Week')),
-            ],
-            selected: {_weeklyView},
-            onSelectionChanged: (v) => setState(() => _weeklyView = v.first),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Summary')),
       body: FutureBuilder(
         future: _loadData(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final data = snapshot.data;
-          if (data == null || data.isEmpty) {
+          final result = snapshot.data as _SummaryData?;
+          if (result == null || result.chartData.isEmpty) {
             return const Center(
               child: Text('No data for this period',
                   style: TextStyle(color: Colors.white54)),
             );
           }
-          return Padding(
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,12 +44,17 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                 const Text('Time per Task',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 16),
-                Expanded(flex: 3, child: _buildBarChart(data)),
+                SizedBox(height: 200, child: _buildBarChart(result.chartData)),
                 const SizedBox(height: 16),
                 const Text('Distribution',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 16),
-                Expanded(flex: 2, child: _buildPieChart(data)),
+                SizedBox(height: 200, child: _buildPieChart(result.chartData)),
+                const SizedBox(height: 24),
+                const Text('Logs',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 16),
+                ..._buildLogs(result.entries),
               ],
             ),
           );
@@ -106,34 +98,178 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
     );
   }
 
-  Future<List<_ChartData>> _loadData() async {
+  Future<_SummaryData> _loadData() async {
     final entryRepo = EntryRepository();
     final taskRepo = TaskRepository();
     final tasks = await taskRepo.getActiveTasks();
     final taskMap = {for (final t in tasks) t.id: t};
 
     Map<String, int> raw;
+    DateTime rangeStart, rangeEnd;
+
     if (_weeklyView) {
-      final weekStart = _selectedDate.subtract(Duration(
-          days: _selectedDate.weekday - 1));
-      raw = await entryRepo.getWeeklySummary(weekStart);
+      rangeStart =
+          _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
+      rangeEnd = rangeStart.add(const Duration(days: 7));
+      raw = await entryRepo.getWeeklySummary(rangeStart);
     } else {
+      rangeStart =
+          DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+      rangeEnd = rangeStart.add(const Duration(days: 1));
       raw = await entryRepo.getDailySummary(_selectedDate);
     }
 
-    final data = <_ChartData>[];
+    final chartData = <_ChartData>[];
     for (final entry in raw.entries) {
       final task = taskMap[entry.key];
       if (task != null) {
-        data.add(_ChartData(
+        chartData.add(_ChartData(
           task.name,
           entry.value.toDouble(),
           colorFromInt(task.color),
         ));
       }
     }
-    data.sort((a, b) => b.value.compareTo(a.value));
-    return data;
+    chartData.sort((a, b) => b.value.compareTo(a.value));
+
+    final entries = await entryRepo.getEntriesInRange(rangeStart, rangeEnd);
+
+    return _SummaryData(chartData: chartData, entries: entries);
+  }
+
+  List<Widget> _buildLogs(List<Map<String, dynamic>> entries) {
+    if (entries.isEmpty) {
+      return [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 16),
+          child: Center(
+            child: Text('No entries for this period',
+                style: TextStyle(color: Colors.white54)),
+          ),
+        ),
+      ];
+    }
+
+    final dateFormat = DateFormat('MMM d, yyyy');
+    final timeFormat = DateFormat('HH:mm');
+
+    final grouped = <String, List<Map<String, dynamic>>>{};
+    for (final e in entries) {
+      final startTime = DateTime.parse(e['start_time'] as String);
+      final dayKey = DateFormat('yyyy-MM-dd').format(startTime);
+      grouped.putIfAbsent(dayKey, () => []);
+      grouped[dayKey]!.add(e);
+    }
+
+    final widgets = <Widget>[];
+    for (final dayEntry in grouped.entries) {
+      final date = DateTime.parse(dayEntry.key);
+      final isToday = DateUtils.isSameDay(date, DateTime.now());
+
+      widgets.add(Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        child: Text(
+          isToday ? 'Today' : dateFormat.format(date),
+          style: TextStyle(
+            color: Colors.white.withAlpha(180),
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ));
+
+      for (final e in dayEntry.value) {
+        final entryId = e['id'] as String;
+        final taskName = e['task_name'] as String? ?? 'Unknown';
+        final taskColor = colorFromInt(e['task_color'] as int? ?? 0xFF4CAF50);
+        final startTime = DateTime.parse(e['start_time'] as String);
+        final endTimeStr = e['end_time'] as String?;
+        final endTime =
+            endTimeStr != null ? DateTime.parse(endTimeStr) : null;
+        final durationSeconds = e['duration_seconds'] as int?;
+
+        final durStr = durationSeconds != null
+            ? _formatDuration(durationSeconds)
+            : '--:--';
+
+        widgets.add(Dismissible(
+          key: Key(entryId),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            margin: const EdgeInsets.only(bottom: 6),
+            decoration: BoxDecoration(
+              color: Colors.red.withAlpha(40),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.delete, color: Colors.red),
+          ),
+          confirmDismiss: (direction) async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Delete Entry'),
+                content: Text('Delete this entry for "$taskName"?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed == true) {
+              final repo = EntryRepository();
+              await repo.deleteEntry(entryId);
+              setState(() {});
+              return true;
+            }
+            return false;
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            decoration: BoxDecoration(
+              color: taskColor.withAlpha(30),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: taskColor.withAlpha(60)),
+            ),
+            child: ListTile(
+              leading: Container(
+                width: 8,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: taskColor,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              title: Text(taskName,
+                  style: const TextStyle(fontWeight: FontWeight.w500)),
+              subtitle: Text(
+                '${timeFormat.format(startTime)} - '
+                '${endTime != null ? timeFormat.format(endTime) : 'running'}',
+                style: TextStyle(color: Colors.white.withAlpha(120), fontSize: 12),
+              ),
+              trailing: Text(
+                durStr,
+                style: TextStyle(
+                  color: endTime == null ? Colors.greenAccent : Colors.white70,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ),
+        ));
+      }
+    }
+
+    return widgets;
   }
 
   Widget _buildBarChart(List<_ChartData> data) {
@@ -166,7 +302,8 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                     data[idx].label.length > 6
                         ? '${data[idx].label.substring(0, 6)}..'
                         : data[idx].label,
-                    style: const TextStyle(fontSize: 10, color: Colors.white54),
+                    style:
+                        const TextStyle(fontSize: 10, color: Colors.white54),
                   ),
                 );
               },
@@ -229,10 +366,18 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
   String _formatDuration(int seconds) {
     final h = seconds ~/ 3600;
     final m = (seconds % 3600) ~/ 60;
-    if (h > 0) return '${h}h ${m}m';
-    if (m > 0) return '${m}m';
-    return '${seconds}s';
+    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
   }
+}
+
+class _SummaryData {
+  final List<_ChartData> chartData;
+  final List<Map<String, dynamic>> entries;
+
+  const _SummaryData({
+    required this.chartData,
+    required this.entries,
+  });
 }
 
 class _ChartData {

@@ -11,6 +11,11 @@ final allEntriesProvider = FutureProvider<List<TimeEntry>>((ref) async {
   return repo.getAll(limit: 200);
 });
 
+final dailySummaryProvider = FutureProvider<Map<String, int>>((ref) async {
+  final repo = ref.watch(entryRepositoryProvider);
+  return repo.getDailySummary(DateTime.now());
+});
+
 final dailyBreakdownProvider =
     FutureProvider.family<List<Map<String, dynamic>>, DateTime>(
   (ref, date) async {

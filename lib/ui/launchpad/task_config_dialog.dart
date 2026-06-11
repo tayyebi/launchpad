@@ -16,13 +16,11 @@ class TaskConfigDialog extends ConsumerStatefulWidget {
 
 class _TaskConfigDialogState extends ConsumerState<TaskConfigDialog> {
   late TextEditingController _nameCtrl;
-  late int _selectedColor;
 
   @override
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController(text: widget.task.name);
-    _selectedColor = widget.task.color;
   }
 
   @override
@@ -35,51 +33,13 @@ class _TaskConfigDialogState extends ConsumerState<TaskConfigDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Configure Task'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Task Name',
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 16),
-            const Text('Color', style: TextStyle(fontWeight: FontWeight.w500)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: presetColors.map((c) {
-                final selected = c.value == _selectedColor;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedColor = c.value),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: c,
-                      borderRadius: BorderRadius.circular(8),
-                      border: selected
-                          ? Border.all(color: Colors.white, width: 3)
-                          : null,
-                      boxShadow: selected
-                          ? [BoxShadow(color: c.withAlpha(150), blurRadius: 8)]
-                          : null,
-                    ),
-                    child: selected
-                        ? const Icon(Icons.check, color: Colors.white, size: 20)
-                        : null,
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
+      content: TextField(
+        controller: _nameCtrl,
+        decoration: const InputDecoration(
+          labelText: 'Task Name',
+          border: OutlineInputBorder(),
         ),
+        autofocus: true,
       ),
       actions: [
         TextButton(
@@ -105,7 +65,7 @@ class _TaskConfigDialogState extends ConsumerState<TaskConfigDialog> {
     final repo = ref.read(taskRepositoryProvider);
     await repo.update(widget.task.copyWith(
       name: name,
-      color: _selectedColor,
+      color: colorFromName(name),
     ));
     ref.invalidate(tasksProvider);
     if (context.mounted) Navigator.pop(context);

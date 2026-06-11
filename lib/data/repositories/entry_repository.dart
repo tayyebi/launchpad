@@ -86,6 +86,14 @@ class EntryRepository {
     return maps.map(TimeEntry.fromMap).toList();
   }
 
+  Future<void> deleteEntry(String entryId) async {
+    await _db.db.delete(
+      'time_entries',
+      where: 'id = ?',
+      whereArgs: [entryId],
+    );
+  }
+
   Future<void> markSynced(String entryId) async {
     await _db.db.update(
       'time_entries',
@@ -126,6 +134,16 @@ class EntryRepository {
       result[m['task_id'] as String] = m['total'] as int;
     }
     return result;
+  }
+
+  Future<List<Map<String, dynamic>>> getEntriesInRange(DateTime start, DateTime end) async {
+    return await _db.db.rawQuery('''
+      SELECT time_entries.*, tasks.name as task_name, tasks.color as task_color
+      FROM time_entries
+      INNER JOIN tasks ON tasks.id = time_entries.task_id
+      WHERE time_entries.start_time >= ? AND time_entries.start_time < ?
+      ORDER BY time_entries.start_time DESC
+    ''', [start.toIso8601String(), end.toIso8601String()]);
   }
 
   Future<List<Map<String, dynamic>>> getDailyBreakdown(DateTime date) async {

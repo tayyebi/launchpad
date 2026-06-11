@@ -6,8 +6,9 @@ class LaunchpadTile extends StatefulWidget {
   final int color;
   final bool isActive;
   final String? elapsed;
+  final int? dailyTotal;
   final VoidCallback onTap;
-  final VoidCallback onLongPress;
+  final VoidCallback? onLongPress;
 
   const LaunchpadTile({
     super.key,
@@ -15,8 +16,9 @@ class LaunchpadTile extends StatefulWidget {
     required this.color,
     required this.isActive,
     this.elapsed,
+    this.dailyTotal,
     required this.onTap,
-    required this.onLongPress,
+    this.onLongPress,
   });
 
   @override
@@ -51,6 +53,12 @@ class _LaunchpadTileState extends State<LaunchpadTile>
       _glowCtrl.stop();
       _glowCtrl.reset();
     }
+  }
+
+  String _formatDuration(int seconds) {
+    final h = seconds ~/ 3600;
+    final m = (seconds % 3600) ~/ 60;
+    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -176,6 +184,21 @@ class _LaunchpadTileState extends State<LaunchpadTile>
                                 blurRadius: 12 * glowIntensity,
                               ),
                             ],
+                          ),
+                        ),
+                      ),
+                    if (widget.dailyTotal != null && widget.dailyTotal! > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          _formatDuration(widget.dailyTotal!),
+                          style: TextStyle(
+                            color: active
+                                ? Colors.white.withAlpha(180)
+                                : Colors.white.withAlpha(100),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                       ),

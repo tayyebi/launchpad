@@ -21,3 +21,9 @@ const presetColors = [
 
 Color colorFromInt(int value) => Color(value);
 int intFromColor(Color c) => c.value;
+
+int colorFromName(String name) {
+  final hash = name.codeUnits.fold<int>(0, (h, c) => h * 31 + c);
+  final hue = hash.abs() % 360;
+  return HSVColor.fromAHSV(1.0, hue.toDouble(), 0.7, 0.8).toColor().value;
+}

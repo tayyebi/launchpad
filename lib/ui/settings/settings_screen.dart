@@ -4,6 +4,7 @@ import '../../providers/settings_provider.dart';
 import '../../providers/task_providers.dart';
 import '../../providers/timer_provider.dart';
 import '../../data/repositories/task_repository.dart';
+import '../../core/utils/color_utils.dart';
 import '../launchpad/task_config_dialog.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -126,65 +127,18 @@ class SettingsScreen extends ConsumerWidget {
 
   Future<void> _addTask(BuildContext context, WidgetRef ref) async {
     final nameCtrl = TextEditingController();
-    final selectedColor = ValueNotifier<int>(0xFF4CAF50);
 
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('New Task'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Task Name',
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 16),
-            const Text('Color'),
-            const SizedBox(height: 8),
-            ValueListenableBuilder<int>(
-              valueListenable: selectedColor,
-              builder: (context, color, _) {
-                return Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    const Color(0xFF4CAF50),
-                    const Color(0xFF2196F3),
-                    const Color(0xFFFF5722),
-                    const Color(0xFF9C27B0),
-                    const Color(0xFFFFC107),
-                    const Color(0xFFE91E63),
-                    const Color(0xFF00BCD4),
-                    const Color(0xFFFF9800),
-                  ].map((c) {
-                    final sel = c.value == color;
-                    return GestureDetector(
-                      onTap: () => selectedColor.value = c.value,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: c,
-                          borderRadius: BorderRadius.circular(6),
-                          border: sel
-                              ? Border.all(color: Colors.white, width: 2)
-                              : null,
-                        ),
-                        child: sel
-                            ? const Icon(Icons.check, color: Colors.white, size: 18)
-                            : null,
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
-          ],
+        content: TextField(
+          controller: nameCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Task Name',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
         ),
         actions: [
           TextButton(
@@ -203,7 +157,7 @@ class SettingsScreen extends ConsumerWidget {
       final repo = ref.read(taskRepositoryProvider);
       await repo.create(
         name: nameCtrl.text.trim(),
-        color: selectedColor.value,
+        color: colorFromName(nameCtrl.text.trim()),
       );
       ref.invalidate(tasksProvider);
     }
