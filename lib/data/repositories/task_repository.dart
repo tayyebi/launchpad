@@ -76,4 +76,18 @@ class TaskRepository {
       whereArgs: [id],
     );
   }
+
+  Future<void> updateGridPositions(List<MapEntry<String, int>> positions) async {
+    final batch = _db.db.batch();
+    final now = DateTime.now().toIso8601String();
+    for (final entry in positions) {
+      batch.update(
+        'tasks',
+        {'grid_position': entry.value, 'updated_at': now},
+        where: 'id = ?',
+        whereArgs: [entry.key],
+      );
+    }
+    await batch.commit(noResult: true);
+  }
 }

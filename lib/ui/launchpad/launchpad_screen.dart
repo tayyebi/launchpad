@@ -1,10 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import '../../providers/task_providers.dart';
 import '../../providers/timer_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/entry_providers.dart';
+import '../../data/repositories/task_repository.dart';
+import '../../services/widget_service.dart';
 import '../settings/settings_screen.dart';
 import '../summary/summary_screen.dart';
 import 'launchpad_tile.dart';
@@ -60,63 +63,80 @@ class LaunchpadScreen extends ConsumerWidget {
                       size: 64, color: Colors.white24),
                   SizedBox(height: 16),
                   Text('No tasks yet',
-                      style:
-                          TextStyle(color: Colors.white54, fontSize: 18)),
+                      style: TextStyle(
+                          color: Colors.white54, fontSize: 18)),
                 ],
               ),
             );
           }
 
           final tiles = gridSize * gridSize;
-          final filled = List.generate(
-            tiles,
-            (i) => i < tasks.length ? tasks[i] : null,
-          );
+          final children = <Widget>[];
+
+          for (int i = 0; i < tiles; i++) {
+            if (i < tasks.length) {
+              final task = tasks[i];
+              final isActive = timerState.activeTaskId == task.id;
+              final elapsed =
+                  isActive ? _formatElapsed(timerState.elapsed) : null;
+              final dailyTotal = dailySummary[task.id] ?? 0;
+
+              children.add(LaunchpadTile(
+                key: ValueKey(task.id),
+                name: task.name,
+                color: task.color,
+                isActive: isActive,
+                elapsed: elapsed,
+                dailyTotal: showDaily ? dailyTotal : null,
+                onTap: () =>
+                    ref.read(timerProvider.notifier).toggleTask(task.id),
+              ));
+            } else {
+              children.add(Container(
+                key: ValueKey('empty_$i'),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(10),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withAlpha(20),
+                    style: BorderStyle.solid,
+                  ),
+                ),
+              ));
+            }
+          }
 
           return Padding(
             padding: const EdgeInsets.all(12),
-            child: GridView.builder(
+            child: ReorderableGridView(
+              children: children,
+              onReorder: (int oldIndex, int newIndex) async {
+                if (oldIndex == newIndex) return;
+                final task = tasks[oldIndex];
+                final reordered = [...tasks];
+                reordered.removeAt(oldIndex);
+                reordered.insert(newIndex, task);
+
+                final repo = ref.read(taskRepositoryProvider);
+                final positions = reordered.asMap().entries
+                    .map((e) => MapEntry(e.value.id, e.key))
+                    .toList();
+                await repo.updateGridPositions(positions);
+                ref.invalidate(tasksProvider);
+
+                final updatedTasks =
+                    await ref.read(tasksProvider.future);
+                WidgetService.updateWidget(
+                  tasks: updatedTasks,
+                  activeTaskId: timerState.activeTaskId,
+                );
+              },
               gridDelegate:
                   SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: gridSize,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
               ),
-              itemCount: tiles,
-              itemBuilder: (context, index) {
-                final task = filled[index];
-                if (task == null) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(10),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withAlpha(20),
-                        style: BorderStyle.solid,
-                      ),
-                    ),
-                  );
-                }
-
-                final isActive =
-                    timerState.activeTaskId == task.id;
-                final elapsed = isActive
-                    ? _formatElapsed(timerState.elapsed)
-                    : null;
-                final dailyTotal = dailySummary[task.id] ?? 0;
-
-                return LaunchpadTile(
-                  name: task.name,
-                  color: task.color,
-                  isActive: isActive,
-                  elapsed: elapsed,
-                  dailyTotal:
-                      showDaily ? dailyTotal : null,
-                  onTap: () => ref
-                      .read(timerProvider.notifier)
-                      .toggleTask(task.id),
-                );
-              },
             ),
           );
         },

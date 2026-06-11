@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/time_entry.dart';
 import '../data/repositories/entry_repository.dart';
 import '../data/repositories/task_repository.dart';
+import '../services/widget_service.dart';
 import 'entry_providers.dart';
 import 'task_providers.dart';
 
@@ -85,6 +86,11 @@ class TimerNotifier extends StateNotifier<TimerState> {
       state = state.copyWith(isLoading: false);
       _ref.invalidate(allEntriesProvider);
       _ref.invalidate(tasksProvider);
+      final tasks = await _taskRepo.getActiveTasks();
+      WidgetService.updateWidget(
+        tasks: tasks,
+        activeTaskId: state.activeTaskId,
+      );
     }
   }
 

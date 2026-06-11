@@ -4,6 +4,7 @@ import '../../core/utils/color_utils.dart';
 import '../../data/models/task.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../providers/task_providers.dart';
+import '../../services/widget_service.dart';
 
 class TaskConfigDialog extends ConsumerStatefulWidget {
   final Task task;
@@ -68,6 +69,8 @@ class _TaskConfigDialogState extends ConsumerState<TaskConfigDialog> {
       color: colorFromName(name),
     ));
     ref.invalidate(tasksProvider);
+    final tasks = await ref.read(tasksProvider.future);
+    WidgetService.updateWidget(tasks: tasks);
     if (context.mounted) Navigator.pop(context);
   }
 
@@ -90,6 +93,8 @@ class _TaskConfigDialogState extends ConsumerState<TaskConfigDialog> {
       final repo = ref.read(taskRepositoryProvider);
       await repo.delete(widget.task.id);
       ref.invalidate(tasksProvider);
+      final tasks = await ref.read(tasksProvider.future);
+      WidgetService.updateWidget(tasks: tasks);
       if (context.mounted) Navigator.pop(context);
     }
   }

@@ -5,6 +5,7 @@ import '../../providers/task_providers.dart';
 import '../../providers/timer_provider.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../core/utils/color_utils.dart';
+import '../../services/widget_service.dart';
 import '../launchpad/task_config_dialog.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -160,6 +161,8 @@ class SettingsScreen extends ConsumerWidget {
         color: colorFromName(nameCtrl.text.trim()),
       );
       ref.invalidate(tasksProvider);
+      final tasks = await ref.read(tasksProvider.future);
+      WidgetService.updateWidget(tasks: tasks);
     }
     nameCtrl.dispose();
   }
