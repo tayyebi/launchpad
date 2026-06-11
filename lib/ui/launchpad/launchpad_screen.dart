@@ -108,7 +108,10 @@ class LaunchpadScreen extends ConsumerWidget {
 
           return Padding(
             padding: const EdgeInsets.all(12),
-            child: ReorderableGridView(
+            child: ReorderableGridView.count(
+              crossAxisCount: gridSize,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
               children: children,
               onReorder: (int oldIndex, int newIndex) async {
                 if (oldIndex == newIndex) return;
@@ -131,12 +134,6 @@ class LaunchpadScreen extends ConsumerWidget {
                   activeTaskId: timerState.activeTaskId,
                 );
               },
-              gridDelegate:
-                  SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: gridSize,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-              ),
             ),
           );
         },

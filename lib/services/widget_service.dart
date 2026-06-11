@@ -15,10 +15,6 @@ class WidgetService {
     }).toList();
 
     await HomeWidget.saveWidgetData('launchpad_tasks', jsonEncode(data));
-    await HomeWidget.updateWidget(
-      android: AndroidWidget(
-        name: 'LaunchpadWidgetProvider',
-      ),
-    );
+    await HomeWidget.updateWidget(name: 'LaunchpadWidgetProvider');
   }
 }
