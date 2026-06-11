@@ -24,37 +24,41 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
       body: FutureBuilder(
         future: _loadData(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          final loading = snapshot.connectionState == ConnectionState.waiting;
           final result = snapshot.data as _SummaryData?;
-          if (result == null || result.chartData.isEmpty) {
-            return const Center(
-              child: Text('No data for this period',
-                  style: TextStyle(color: Colors.white54)),
-            );
-          }
+          final hasChartData = !loading && result != null && result.chartData.isNotEmpty;
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildDateSelector(),
-                const SizedBox(height: 24),
-                const Text('Time per Task',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 16),
-                SizedBox(height: 200, child: _buildBarChart(result.chartData)),
-                const SizedBox(height: 16),
-                const Text('Distribution',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 16),
-                SizedBox(height: 200, child: _buildPieChart(result.chartData)),
+                if (loading)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 40),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (!hasChartData)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 40),
+                    child: Center(
+                      child: Text('No data for this period',
+                          style: TextStyle(color: Colors.white54)),
+                    ),
+                  )
+                else ...[
+                  const SizedBox(height: 24),
+                  const Text('Time per Task',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 16),
+                  SizedBox(height: 200, child: _buildBarChart(result.chartData)),
+                ],
                 const SizedBox(height: 24),
                 const Text('Logs',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 16),
-                ..._buildLogs(result.entries),
+                if (result != null) ..._buildLogs(result.entries),
               ],
             ),
           );
@@ -309,6 +313,18 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
               },
             ),
           ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 42,
+              getTitlesWidget: (value, meta) {
+                return Text(
+                  _formatDuration(value.toInt()),
+                  style: const TextStyle(fontSize: 10, color: Colors.white38),
+                );
+              },
+            ),
+          ),
           topTitles:
               const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles:
@@ -335,30 +351,6 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
             ],
           );
         }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildPieChart(List<_ChartData> data) {
-    return PieChart(
-      PieChartData(
-        sections: data.asMap().entries.map((entry) {
-          final total = data.fold(0.0, (s, d) => s + d.value);
-          final pct = total > 0 ? (entry.value.value / total * 100) : 0.0;
-          return PieChartSectionData(
-            color: entry.value.color,
-            value: entry.value.value,
-            title: '${pct.toStringAsFixed(0)}%',
-            radius: 50,
-            titleStyle: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          );
-        }).toList(),
-        sectionsSpace: 2,
-        centerSpaceRadius: 30,
       ),
     );
   }

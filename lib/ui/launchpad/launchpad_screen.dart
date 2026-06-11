@@ -32,20 +32,6 @@ class LaunchpadScreen extends ConsumerWidget {
     final dailySummaryAsync = ref.watch(dailySummaryProvider);
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              color: Colors.black.withAlpha(80),
-            ),
-          ),
-        ),
-        title: const Text('Launchpad'),
-      ),
       body: tasksAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -55,17 +41,20 @@ class LaunchpadScreen extends ConsumerWidget {
           final showDaily = gridSize <= 3;
 
           if (tasks.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.dashboard_customize,
-                      size: 64, color: Colors.white24),
-                  SizedBox(height: 16),
-                  Text('No tasks yet',
-                      style: TextStyle(
-                          color: Colors.white54, fontSize: 18)),
-                ],
+            return const Padding(
+              padding: EdgeInsets.only(top: 48),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.dashboard_customize,
+                        size: 64, color: Colors.white24),
+                    SizedBox(height: 16),
+                    Text('No tasks yet',
+                        style: TextStyle(
+                            color: Colors.white54, fontSize: 18)),
+                  ],
+                ),
               ),
             );
           }
@@ -107,7 +96,7 @@ class LaunchpadScreen extends ConsumerWidget {
           }
 
           return Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(12, 48, 12, 12),
             child: ReorderableGridView.count(
               crossAxisCount: gridSize,
               crossAxisSpacing: 10,

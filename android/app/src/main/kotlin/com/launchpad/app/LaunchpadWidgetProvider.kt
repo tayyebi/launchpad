@@ -16,7 +16,7 @@ class LaunchpadWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        val prefs = context.getSharedPreferences("home_widget", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
         val tasksJson = prefs.getString("launchpad_tasks", null)
 
         val cellIds = listOf(
