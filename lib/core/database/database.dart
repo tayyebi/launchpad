@@ -121,6 +121,7 @@ class AppDatabase {
     final now = DateTime.now().toIso8601String();
     final defaults = [
       'Work',
+      'Chill',
       'Study',
       'Exercise',
       'Reading',
