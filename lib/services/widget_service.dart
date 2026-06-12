@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:home_widget/home_widget.dart';
 import '../data/models/task.dart';
+import 'widget_renderer.dart';
 
 class WidgetService {
   static Future<void> updateWidget({
@@ -14,6 +15,10 @@ class WidgetService {
     }).toList();
 
     await HomeWidget.saveWidgetData('launchpad_tasks', jsonEncode(data));
+    await WidgetRenderer.renderAndSave(
+      tasks: tasks,
+      activeTaskName: activeTaskName,
+    );
     await HomeWidget.updateWidget(name: 'LaunchpadWidgetProvider');
   }
 }

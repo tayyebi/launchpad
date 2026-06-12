@@ -5,7 +5,9 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.util.Base64
 import android.widget.RemoteViews
 import org.json.JSONArray
 
@@ -17,18 +19,14 @@ class LaunchpadWidgetProvider : AppWidgetProvider() {
         appWidgetIds: IntArray
     ) {
         val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
+
         val tasksJson = prefs.getString("launchpad_tasks", null)
+        val tilesJson = prefs.getString("launchpad_tiles", null)
 
         val cellIds = listOf(
             R.id.cell_1, R.id.cell_2, R.id.cell_3,
             R.id.cell_4, R.id.cell_5, R.id.cell_6,
             R.id.cell_7, R.id.cell_8, R.id.cell_9
-        )
-
-        val nameIds = listOf(
-            R.id.name_1, R.id.name_2, R.id.name_3,
-            R.id.name_4, R.id.name_5, R.id.name_6,
-            R.id.name_7, R.id.name_8, R.id.name_9
         )
 
         for (appWidgetId in appWidgetIds) {
@@ -38,62 +36,60 @@ class LaunchpadWidgetProvider : AppWidgetProvider() {
                 views.setViewVisibility(cellIds[i], android.view.View.GONE)
             }
 
-            if (!tasksJson.isNullOrEmpty()) {
+            val tasks = if (!tasksJson.isNullOrEmpty()) {
                 try {
-                    val tasks = JSONArray(tasksJson)
+                    JSONArray(tasksJson)
+                } catch (_: Exception) {
+                    null
+                }
+            } else null
 
-                    val count = minOf(tasks.length(), 9)
-                    for (i in 0 until count) {
-                        val task = tasks.getJSONObject(i)
-                        val name = task.getString("name")
-                        val colorInt = task.getInt("color")
-                        val isActive = task.optBoolean("isActive", false)
+            if (!tilesJson.isNullOrEmpty()) {
+                try {
+                    val tiles = JSONArray(tilesJson)
 
-                        views.setViewVisibility(cellIds[i], android.view.View.VISIBLE)
-                        views.setTextViewText(nameIds[i], name)
+                    for (i in 0 until minOf(tiles.length(), 9)) {
+                        val base64Str = tiles.optString(i, "")
+                        if (base64Str.isEmpty()) continue
 
-                        val bgColor = if (isActive) {
-                            lightenColor(colorInt, 0.3f)
-                        } else {
-                            darkenColor(colorInt, 0.6f)
+                        val imageBytes = Base64.decode(base64Str, Base64.DEFAULT)
+                        val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+
+                        if (bitmap != null) {
+                            views.setViewVisibility(cellIds[i], android.view.View.VISIBLE)
+                            views.setImageViewBitmap(cellIds[i], bitmap)
                         }
-                        views.setInt(cellIds[i], "setBackgroundColor", bgColor)
-                        views.setTextColor(nameIds[i], Color.WHITE)
 
-                        val intent = Intent(context, MainActivity::class.java).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                            putExtra("task_name", name)
+                        if (tasks != null && i < tasks.length()) {
+                            val task = tasks.getJSONObject(i)
+                            val name = task.optString("name", "")
+                            if (name.isNotEmpty()) {
+                                val intent = Intent(context, MainActivity::class.java).apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                    putExtra("task_name", name)
+                                }
+                                val pendingIntent = PendingIntent.getActivity(
+                                    context, i, intent,
+                                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                                )
+                                views.setOnClickPendingIntent(cellIds[i], pendingIntent)
+                            }
                         }
-                        val pendingIntent = PendingIntent.getActivity(
-                            context, i, intent,
-                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                        )
-                        views.setOnClickPendingIntent(cellIds[i], pendingIntent)
                     }
                 } catch (_: Exception) {
                     views.setViewVisibility(cellIds[0], android.view.View.VISIBLE)
-                    views.setTextViewText(nameIds[0], "Error")
+                    val errBitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
+                    errBitmap.eraseColor(android.graphics.Color.parseColor("#FF4444"))
+                    views.setImageViewBitmap(cellIds[0], errBitmap)
                 }
             } else {
                 views.setViewVisibility(cellIds[0], android.view.View.VISIBLE)
-                views.setTextViewText(nameIds[0], "No tasks")
+                val emptyBitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
+                emptyBitmap.eraseColor(android.graphics.Color.parseColor("#1AFFFFFF"))
+                views.setImageViewBitmap(cellIds[0], emptyBitmap)
             }
 
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
-    }
-
-    private fun lightenColor(color: Int, factor: Float): Int {
-        val r = (Color.red(color) * (1 + factor) + 255 * factor).toInt().coerceIn(0, 255)
-        val g = (Color.green(color) * (1 + factor) + 255 * factor).toInt().coerceIn(0, 255)
-        val b = (Color.blue(color) * (1 + factor) + 255 * factor).toInt().coerceIn(0, 255)
-        return Color.rgb(r, g, b)
-    }
-
-    private fun darkenColor(color: Int, factor: Float): Int {
-        val r = (Color.red(color) * (1 - factor)).toInt().coerceIn(0, 255)
-        val g = (Color.green(color) * (1 - factor)).toInt().coerceIn(0, 255)
-        val b = (Color.blue(color) * (1 - factor)).toInt().coerceIn(0, 255)
-        return Color.rgb(r, g, b)
     }
 }
