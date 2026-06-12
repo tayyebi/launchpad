@@ -4,6 +4,8 @@ import '../../core/ui/tile_painter.dart';
 import '../../core/utils/color_utils.dart';
 
 class _BreathingCurve extends Curve {
+  const _BreathingCurve();
+
   @override
   double transformInternal(double t) {
     const inhaleEnd = 4.0 / 20.0;
