@@ -32,99 +32,107 @@ class LaunchpadScreen extends ConsumerWidget {
     final dailySummaryAsync = ref.watch(dailySummaryProvider);
 
     return Scaffold(
-      body: tasksAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (tasks) {
-          final dailySummary =
-              dailySummaryAsync.whenOrNull(data: (d) => d) ?? {};
-          final showDaily = gridSize <= 3;
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isLandscape = constraints.maxWidth > constraints.maxHeight;
+          final topPad = isLandscape ? 8.0 : 48.0;
+          final sidePad = isLandscape ? 48.0 : 12.0;
 
-          if (tasks.isEmpty) {
-            return const Padding(
-              padding: EdgeInsets.only(top: 48),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.dashboard_customize,
-                        size: 64, color: Colors.white24),
-                    SizedBox(height: 16),
-                    Text('No tasks yet',
-                        style: TextStyle(
-                            color: Colors.white54, fontSize: 18)),
-                  ],
-                ),
-              ),
-            );
-          }
+          return tasksAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Error: $e')),
+            data: (tasks) {
+              final dailySummary =
+                  dailySummaryAsync.whenOrNull(data: (d) => d) ?? {};
+              final showDaily = gridSize <= 3;
 
-          final tiles = gridSize * gridSize;
-          final children = <Widget>[];
-
-          for (int i = 0; i < tiles; i++) {
-            if (i < tasks.length) {
-              final task = tasks[i];
-              final isActive = timerState.activeTaskName == task.name;
-              final elapsed =
-                  isActive ? _formatElapsed(timerState.elapsed) : null;
-              final dailyTotal = dailySummary[task.name] ?? 0;
-
-              children.add(LaunchpadTile(
-                key: ValueKey(task.name),
-                name: task.name,
-                color: task.color,
-                isActive: isActive,
-                elapsed: elapsed,
-                dailyTotal: showDaily ? dailyTotal : null,
-                onTap: () =>
-                    ref.read(timerProvider.notifier).toggleTask(task.name),
-              ));
-            } else {
-              children.add(Container(
-                key: ValueKey('empty_$i'),
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(10),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.white.withAlpha(20),
-                    style: BorderStyle.solid,
+              if (tasks.isEmpty) {
+                return Padding(
+                  padding: EdgeInsets.only(top: topPad),
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.dashboard_customize,
+                            size: 64, color: Colors.white24),
+                        SizedBox(height: 16),
+                        Text('No tasks yet',
+                            style: TextStyle(
+                                color: Colors.white54, fontSize: 18)),
+                      ],
+                    ),
                   ),
-                ),
-              ));
-            }
-          }
-
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(12, 48, 12, 12),
-            child: ReorderableGridView.count(
-              crossAxisCount: gridSize,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              children: children,
-              onReorder: (int oldIndex, int newIndex) async {
-                if (oldIndex == newIndex) return;
-                final task = tasks[oldIndex];
-                final reordered = [...tasks];
-                reordered.removeAt(oldIndex);
-                reordered.insert(newIndex, task);
-
-                final repo = ref.read(taskRepositoryProvider);
-                final positions = reordered.asMap().entries
-                    .map((e) => MapEntry(e.value.name, e.key))
-                    .toList();
-                await repo.updateGridPositions(positions);
-                ref.invalidate(tasksProvider);
-
-                final updatedTasks =
-                    await ref.read(tasksProvider.future);
-                WidgetService.updateWidget(
-                  tasks: updatedTasks,
-                  activeTaskName: timerState.activeTaskName,
-                  gridSize: gridSize,
                 );
-              },
-            ),
+              }
+
+              final tiles = gridSize * gridSize;
+              final children = <Widget>[];
+
+              for (int i = 0; i < tiles; i++) {
+                if (i < tasks.length) {
+                  final task = tasks[i];
+                  final isActive = timerState.activeTaskName == task.name;
+                  final elapsed =
+                      isActive ? _formatElapsed(timerState.elapsed) : null;
+                  final dailyTotal = dailySummary[task.name] ?? 0;
+
+                  children.add(LaunchpadTile(
+                    key: ValueKey(task.name),
+                    name: task.name,
+                    color: task.color,
+                    isActive: isActive,
+                    elapsed: elapsed,
+                    dailyTotal: showDaily ? dailyTotal : null,
+                    onTap: () =>
+                        ref.read(timerProvider.notifier).toggleTask(task.name),
+                  ));
+                } else {
+                  children.add(Container(
+                    key: ValueKey('empty_$i'),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(10),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withAlpha(20),
+                        style: BorderStyle.solid,
+                      ),
+                    ),
+                  ));
+                }
+              }
+
+              return Padding(
+                padding: EdgeInsets.fromLTRB(sidePad, topPad, sidePad, 12),
+                child: ReorderableGridView.count(
+                  crossAxisCount: gridSize,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  children: children,
+                  onReorder: (int oldIndex, int newIndex) async {
+                    if (oldIndex == newIndex) return;
+                    final task = tasks[oldIndex];
+                    final reordered = [...tasks];
+                    reordered.removeAt(oldIndex);
+                    reordered.insert(newIndex, task);
+
+                    final repo = ref.read(taskRepositoryProvider);
+                    final positions = reordered.asMap().entries
+                        .map((e) => MapEntry(e.value.name, e.key))
+                        .toList();
+                    await repo.updateGridPositions(positions);
+                    ref.invalidate(tasksProvider);
+
+                    final updatedTasks =
+                        await ref.read(tasksProvider.future);
+                    WidgetService.updateWidget(
+                      tasks: updatedTasks,
+                      activeTaskName: timerState.activeTaskName,
+                      gridSize: gridSize,
+                    );
+                  },
+                ),
+              );
+            },
           );
         },
       ),

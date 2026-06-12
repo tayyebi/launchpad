@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../data/models/time_entry.dart';
 import '../data/repositories/entry_repository.dart';
 import '../data/repositories/task_repository.dart';
@@ -53,6 +54,8 @@ class TimerNotifier extends StateNotifier<TimerState> {
         activeTaskName: entry.taskName,
         elapsed: DateTime.now().difference(entry.startTime),
       );
+      (await SharedPreferences.getInstance())
+          .setString('active_task_name', entry.taskName);
       _startTicking();
     }
     _ref.invalidate(tasksProvider);
@@ -101,6 +104,7 @@ class TimerNotifier extends StateNotifier<TimerState> {
       activeTaskName: taskName,
       elapsed: Duration.zero,
     );
+    (await SharedPreferences.getInstance()).setString('active_task_name', taskName);
     _startTicking();
   }
 
@@ -112,6 +116,7 @@ class TimerNotifier extends StateNotifier<TimerState> {
       elapsedSeconds: state.elapsed.inSeconds,
     );
     state = const TimerState();
+    (await SharedPreferences.getInstance()).remove('active_task_name');
   }
 
   Future<void> stopIfRunning() async {

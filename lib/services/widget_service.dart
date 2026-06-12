@@ -9,10 +9,9 @@ class WidgetService {
     String? activeTaskName,
     int? gridSize,
   }) async {
-    if (gridSize == null) {
-      final prefs = await SharedPreferences.getInstance();
-      gridSize = prefs.getInt('grid_size') ?? 3;
-    }
+    final prefs = await SharedPreferences.getInstance();
+    gridSize ??= prefs.getInt('grid_size') ?? 3;
+    activeTaskName ??= prefs.getString('active_task_name');
 
     await WidgetRenderer.renderAndSave(
       tasks: tasks,

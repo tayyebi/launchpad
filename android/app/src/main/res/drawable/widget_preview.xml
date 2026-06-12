@@ -5,11 +5,6 @@
     android:viewportWidth="250"
     android:viewportHeight="180">
 
-    <!-- Background -->
-    <path
-        android:fillColor="#FF121212"
-        android:pathData="M0,0h250v180h-250z" />
-
     <!-- Cell 1 - blue -->
     <path
         android:fillColor="#4A90D9"

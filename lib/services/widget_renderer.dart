@@ -29,12 +29,6 @@ class WidgetRenderer {
       Rect.fromLTWH(0, 0, gridPixelSize, gridPixelSize),
     );
 
-    final bgPaint = Paint()..color = const Color(0xFF121212);
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, gridPixelSize, gridPixelSize),
-      bgPaint,
-    );
-
     for (int i = 0; i < cellsToRender; i++) {
       final col = i % gridSize;
       final row = i ~/ gridSize;
@@ -59,18 +53,6 @@ class WidgetRenderer {
           isDark: true,
           glowIntensity: isActive ? 1.0 : 0.0,
         );
-      } else {
-        final rrect = RRect.fromRectAndRadius(
-          Rect.fromLTWH(0, 0, _tileSize, _tileSize),
-          const Radius.circular(16),
-        );
-        final bg = Paint()..color = Colors.white.withAlpha(10);
-        canvas.drawRRect(rrect, bg);
-        final border = Paint()
-          ..color = Colors.white.withAlpha(20)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.0;
-        canvas.drawRRect(rrect, border);
       }
 
       canvas.restore();

@@ -53,7 +53,7 @@ class LaunchpadWidgetProvider : AppWidgetProvider() {
 
     private fun createFallbackBitmap(context: Context): Bitmap {
         val bmp = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
-        bmp.eraseColor(android.graphics.Color.parseColor("#FF121212"))
+        bmp.eraseColor(android.graphics.Color.TRANSPARENT)
         return bmp
     }
 }
