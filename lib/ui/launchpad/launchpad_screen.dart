@@ -121,6 +121,7 @@ class LaunchpadScreen extends ConsumerWidget {
                 WidgetService.updateWidget(
                   tasks: updatedTasks,
                   activeTaskName: timerState.activeTaskName,
+                  gridSize: gridSize,
                 );
               },
             ),

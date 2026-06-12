@@ -1,6 +1,25 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../core/ui/tile_painter.dart';
 import '../../core/utils/color_utils.dart';
+
+class _BreathingCurve extends Curve {
+  @override
+  double transformInternal(double t) {
+    const inhaleEnd = 4.0 / 20.0;
+    const holdEnd = 11.0 / 20.0;
+
+    if (t <= inhaleEnd) {
+      final p = t / inhaleEnd;
+      return 0.4 + 0.6 * (1 - cos(p * pi / 2));
+    } else if (t <= holdEnd) {
+      return 1.0;
+    } else {
+      final p = (t - holdEnd) / (1.0 - holdEnd);
+      return 0.4 + 0.6 * cos(p * pi / 2);
+    }
+  }
+}
 
 class LaunchpadTile extends StatefulWidget {
   final String name;
@@ -37,19 +56,22 @@ class _LaunchpadTileState extends State<LaunchpadTile>
     super.initState();
     _glowCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-    _glowAnim = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOutSine),
+      duration: const Duration(seconds: 20),
     );
+    _glowAnim = CurvedAnimation(
+      parent: _glowCtrl,
+      curve: const _BreathingCurve(),
+    );
+    if (widget.isActive) {
+      _glowCtrl.repeat();
+    }
   }
 
   @override
   void didUpdateWidget(LaunchpadTile oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive && !oldWidget.isActive) {
-      _glowCtrl.reset();
-      _glowCtrl.forward();
+      _glowCtrl.repeat();
     } else if (!widget.isActive && oldWidget.isActive) {
       _glowCtrl.stop();
       _glowCtrl.reset();

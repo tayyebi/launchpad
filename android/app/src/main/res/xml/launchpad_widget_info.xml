@@ -4,5 +4,6 @@
     android:minHeight="180dp"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/launchpad_widget_layout"
+    android:previewImage="@drawable/widget_preview"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen" />

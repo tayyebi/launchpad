@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="250dp"
+    android:height="180dp"
+    android:viewportWidth="250"
+    android:viewportHeight="180">
+
+    <!-- Background -->
+    <path
+        android:fillColor="#FF121212"
+        android:pathData="M0,0h250v180h-250z" />
+
+    <!-- Cell 1 - blue -->
+    <path
+        android:fillColor="#4A90D9"
+        android:pathData="M8,8h72v52h-72z" />
+
+    <!-- Cell 2 - green -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M85,8h72v52h-72z" />
+
+    <!-- Cell 3 - amber -->
+    <path
+        android:fillColor="#FF9800"
+        android:pathData="M162,8h72v52h-72z" />
+
+    <!-- Cell 4 - purple -->
+    <path
+        android:fillColor="#9C27B0"
+        android:pathData="M8,65h72v52h-72z" />
+
+    <!-- Cell 5 - teal -->
+    <path
+        android:fillColor="#009688"
+        android:pathData="M85,65h72v52h-72z" />
+
+    <!-- Cell 6 - pink -->
+    <path
+        android:fillColor="#E91E63"
+        android:pathData="M162,65h72v52h-72z" />
+
+    <!-- Cell 7 - indigo -->
+    <path
+        android:fillColor="#3F51B5"
+        android:pathData="M8,122h72v52h-72z" />
+
+    <!-- Cell 8 - dim gray placeholder -->
+    <path
+        android:fillColor="#1AFFFFFF"
+        android:pathData="M85,122h72v52h-72z" />
+
+    <!-- Cell 9 - dim gray placeholder -->
+    <path
+        android:fillColor="#1AFFFFFF"
+        android:pathData="M162,122h72v52h-72z" />
+
+</vector>

@@ -7,15 +7,43 @@ import '../core/ui/tile_painter.dart';
 import '../data/models/task.dart';
 
 class WidgetRenderer {
-  static const double _tileSize = 300.0;
+  static const double _tileSize = 180.0;
+  static const double _spacing = 6.0;
+  static const double _padding = 8.0;
+  static const double _radius = 16.0;
 
   static Future<void> renderAndSave({
     required List<Task> tasks,
     String? activeTaskName,
+    int gridSize = 3,
   }) async {
-    final tiles = <String>[];
+    final total = gridSize * gridSize;
+    final cellsToRender = total.clamp(0, 36);
 
-    for (int i = 0; i < 9; i++) {
+    final gridPixelSize =
+        _tileSize * gridSize + _spacing * (gridSize - 1) + _padding * 2;
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(
+      recorder,
+      Rect.fromLTWH(0, 0, gridPixelSize, gridPixelSize),
+    );
+
+    final bgPaint = Paint()..color = const Color(0xFF121212);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, gridPixelSize, gridPixelSize),
+      bgPaint,
+    );
+
+    for (int i = 0; i < cellsToRender; i++) {
+      final col = i % gridSize;
+      final row = i ~/ gridSize;
+      final x = _padding + col * (_tileSize + _spacing);
+      final y = _padding + row * (_tileSize + _spacing);
+
+      canvas.save();
+      canvas.translate(x, y);
+
       if (i < tasks.length) {
         final task = tasks[i];
         final isActive = task.name == activeTaskName;
@@ -24,73 +52,42 @@ class WidgetRenderer {
           color: Color(task.color),
           isActive: isActive,
         );
-        final png = await _renderTileToPng(data);
-        tiles.add(base64Encode(png));
+        paintTileContent(
+          canvas,
+          Size(_tileSize, _tileSize),
+          data,
+          isDark: true,
+          glowIntensity: isActive ? 1.0 : 0.0,
+        );
       } else {
-        final png = await _renderEmptyTile();
-        tiles.add(base64Encode(png));
+        final rrect = RRect.fromRectAndRadius(
+          Rect.fromLTWH(0, 0, _tileSize, _tileSize),
+          const Radius.circular(16),
+        );
+        final bg = Paint()..color = Colors.white.withAlpha(10);
+        canvas.drawRRect(rrect, bg);
+        final border = Paint()
+          ..color = Colors.white.withAlpha(20)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.0;
+        canvas.drawRRect(rrect, border);
       }
+
+      canvas.restore();
     }
 
-    await HomeWidget.saveWidgetData('launchpad_tiles', jsonEncode(tiles));
-  }
-
-  static Future<Uint8List> _renderTileToPng(TileRenderData data) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(
-      recorder,
-      Rect.fromLTWH(0, 0, _tileSize, _tileSize),
-    );
-
-    paintTileContent(
-      canvas,
-      Size(_tileSize, _tileSize),
-      data,
-      isDark: true,
-      glowIntensity: data.isActive ? 1.0 : 0.0,
-    );
-
     final picture = recorder.endRecording();
     final image = await picture.toImage(
-      _tileSize.toInt(),
-      _tileSize.toInt(),
+      gridPixelSize.toInt(),
+      gridPixelSize.toInt(),
     );
     final byteData = await image.toByteData(
       format: ui.ImageByteFormat.png,
     );
-    return byteData!.buffer.asUint8List();
-  }
+    final pngBytes = byteData!.buffer.asUint8List();
 
-  static Future<Uint8List> _renderEmptyTile() async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(
-      recorder,
-      Rect.fromLTWH(0, 0, _tileSize, _tileSize),
-    );
-
-    final rrect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, _tileSize, _tileSize),
-      const Radius.circular(16),
-    );
-
-    final bgPaint = Paint()
-      ..color = Colors.white.withAlpha(10);
-    canvas.drawRRect(rrect, bgPaint);
-
-    final borderPaint = Paint()
-      ..color = Colors.white.withAlpha(20)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-    canvas.drawRRect(rrect, borderPaint);
-
-    final picture = recorder.endRecording();
-    final image = await picture.toImage(
-      _tileSize.toInt(),
-      _tileSize.toInt(),
-    );
-    final byteData = await image.toByteData(
-      format: ui.ImageByteFormat.png,
-    );
-    return byteData!.buffer.asUint8List();
+    await HomeWidget.saveWidgetData(
+        'launchpad_grid', base64Encode(pngBytes));
+    await HomeWidget.saveWidgetData('launchpad_grid_size', gridSize);
   }
 }
