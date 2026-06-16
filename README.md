@@ -17,7 +17,7 @@ openssl genrsa -out release.key 2048
 # Generate a self-signed certificate (valid for 10000 days)
 openssl req -x509 -new -nodes -key release.key \
   -sha256 -days 10000 -out release.crt \
-  -subj "/C=YourCountryCode/ST=YourState/L=YourCity/O=YourOrg/OU=YourUnit/CN=YourName"
+  -subj "/C=IR/ST=HMD/L=Hamedan/O=Gordarg/OU=Launchpad/CN=Mohammad R. Tayyebi"
 
 # Create a PKCS12 keystore (enter a keystore password when prompted)
 openssl pkcs12 -export -in release.crt -inkey release.key \
