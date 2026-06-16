@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -382,30 +383,38 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                 final showInside = barHeight > 18;
 
                 return Positioned(
-                  left: centerX - labelWidth / 2,
+                  left: centerX - 6,
                   top: showInside
-                      ? constraints.maxHeight - barHeight + 4
+                      ? constraints.maxHeight - barHeight + 6
                       : constraints.maxHeight - barHeight - 14,
-                  width: labelWidth,
-                  child: Text(
-                    entry.value.label,
-                    style: TextStyle(
-                      fontSize: 9,
-                      color: showInside
-                          ? Colors.white.withAlpha(200)
-                          : Colors.white70,
-                      fontWeight: FontWeight.w500,
-                      shadows: const [
-                        Shadow(
-                          color: Colors.black54,
-                          blurRadius: 2,
-                          offset: Offset(0, 1),
+                  width: 12,
+                  height: labelWidth,
+                  child: ClipRect(
+                    child: RotatedBox(
+                      quarterTurns: 3,
+                      child: SizedBox(
+                        width: labelWidth,
+                        child: Text(
+                          entry.value.label,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: showInside
+                                ? Colors.white.withAlpha(200)
+                                : Colors.white70,
+                            fontWeight: FontWeight.w500,
+                            shadows: const [
+                              Shadow(
+                                color: Colors.black54,
+                                blurRadius: 2,
+                                offset: Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
                   ),
                 );
               }),
