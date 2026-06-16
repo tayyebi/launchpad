@@ -1,14 +1,18 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/l10n/strings.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/task_providers.dart';
 import '../../providers/timer_provider.dart';
+import '../../providers/entry_providers.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../core/utils/color_utils.dart';
 import '../../services/widget_service.dart';
 import '../launchpad/task_config_dialog.dart';
-import '../logs/logs_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -126,18 +130,61 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.description),
+              leading: const Icon(Icons.file_download),
               title: const Text(Strings.viewLogs),
               trailing: const Icon(Icons.chevron_left),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LogsScreen()),
-              ),
+              onTap: () => _exportCsv(context, ref),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _exportCsv(BuildContext context, WidgetRef ref) async {
+    final entries = await ref.read(allEntriesProvider.future);
+
+    if (entries.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Strings.noEntriesToExport)),
+        );
+      }
+      return;
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln('تاریخ,شروع,پایان,مدت (ثانیه),وظیفه');
+
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    final timeFormat = DateFormat('HH:mm:ss');
+
+    for (final e in entries) {
+      final date = dateFormat.format(e.startTime);
+      final start = timeFormat.format(e.startTime);
+      final end = e.endTime != null ? timeFormat.format(e.endTime!) : '';
+      final dur = e.durationSeconds?.toString() ?? '';
+      final task = _escapeCsv(e.taskName);
+      buffer.writeln('$date,$start,$end,$dur,$task');
+    }
+
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/launchpad_logs.csv');
+    await file.writeAsString(buffer.toString());
+
+    if (context.mounted) {
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'گزارش‌های Launchpad',
+      );
+    }
+  }
+
+  String _escapeCsv(String value) {
+    if (value.contains(',') || value.contains('"') || value.contains('\n')) {
+      return '"${value.replaceAll('"', '""')}"';
+    }
+    return value;
   }
 
   Future<void> _addTask(BuildContext context, WidgetRef ref) async {

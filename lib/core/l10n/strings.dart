@@ -22,7 +22,7 @@ class Strings {
   static const String add = 'افزودن';
   static const String noTasks = 'وظیفه‌ای وجود ندارد';
   static const String active = 'فعال';
-  static const String viewLogs = 'مشاهده گزارش‌ها';
+  static const String viewLogs = 'بارگیری گزارش‌ها';
   static const String newTask = 'وظیفه جدید';
 
   static const String logs = 'گزارش‌ها';
