@@ -1,4 +1,4 @@
-package com.launchpad.app
+package ir.lpad.mobile
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
