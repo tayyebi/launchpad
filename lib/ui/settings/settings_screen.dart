@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/l10n/strings.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/task_providers.dart';
 import '../../providers/timer_provider.dart';
@@ -18,7 +19,7 @@ class SettingsScreen extends ConsumerWidget {
     final tasksAsync = ref.watch(tasksProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: const Text(Strings.settings)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -28,12 +29,12 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Grid Size',
+                  const Text(Strings.gridSize,
                       style: TextStyle(
                           fontSize: 16, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   Text(
-                    '${settings.gridSize} × ${settings.gridSize}',
+                    '${PersianUtils.toPersianDigits(settings.gridSize)} × ${PersianUtils.toPersianDigits(settings.gridSize)}',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -46,13 +47,13 @@ class SettingsScreen extends ConsumerWidget {
                     min: 2,
                     max: 6,
                     divisions: 4,
-                    label: '${settings.gridSize}',
+                    label: PersianUtils.toPersianDigits(settings.gridSize),
                     onChanged: (v) {
                       ref.read(settingsProvider.notifier).setGridSize(v.round());
                     },
                   ),
                   Text(
-                    '${settings.gridSize * settings.gridSize} slots total',
+                    Strings.slotsCount(settings.gridSize * settings.gridSize),
                     style: const TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                 ],
@@ -69,23 +70,23 @@ class SettingsScreen extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Tasks',
+                      const Text(Strings.tasks,
                           style: TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w600)),
                       TextButton.icon(
                         onPressed: () => _addTask(context, ref),
                         icon: const Icon(Icons.add, size: 18),
-                        label: const Text('Add'),
+                        label: const Text(Strings.add),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   tasksAsync.when(
                     loading: () => const CircularProgressIndicator(),
-                    error: (e, _) => Text('Error: $e'),
+                      error: (e, _) => Text('${Strings.error}: $e'),
                     data: (tasks) {
                       if (tasks.isEmpty) {
-                        return const Text('No tasks',
+                        return const Text(Strings.noTasks,
                             style: TextStyle(color: Colors.white54));
                       }
                       return Column(
@@ -103,7 +104,7 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                             title: Text(task.name),
                             subtitle: active
-                                ? const Text('Active',
+                                ? const Text(Strings.active,
                                     style: TextStyle(color: Colors.greenAccent))
                                 : null,
                             trailing: IconButton(
@@ -126,8 +127,8 @@ class SettingsScreen extends ConsumerWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.description),
-              title: const Text('View Logs'),
-              trailing: const Icon(Icons.chevron_right),
+              title: const Text(Strings.viewLogs),
+              trailing: const Icon(Icons.chevron_left),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const LogsScreen()),
@@ -145,11 +146,11 @@ class SettingsScreen extends ConsumerWidget {
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('New Task'),
+        title: const Text(Strings.newTask),
         content: TextField(
           controller: nameCtrl,
           decoration: const InputDecoration(
-            labelText: 'Task Name',
+            labelText: Strings.taskName,
             border: OutlineInputBorder(),
           ),
           autofocus: true,
@@ -157,11 +158,11 @@ class SettingsScreen extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text(Strings.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Add'),
+            child: const Text(Strings.add),
           ),
         ],
       ),

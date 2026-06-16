@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../core/l10n/strings.dart';
 import '../data/api/api_client.dart';
 import '../data/repositories/entry_repository.dart';
 import 'entry_providers.dart';
@@ -64,13 +65,13 @@ class SyncNotifier extends StateNotifier<SyncState> {
       }
       state = state.copyWith(
         status: SyncStatus.success,
-        message: 'Synced ${unsynced.length} entries',
+        message: Strings.syncedEntries(unsynced.length),
       );
       _ref.invalidate(allEntriesProvider);
     } catch (e) {
       state = state.copyWith(
         status: SyncStatus.error,
-        message: 'Sync failed: $e',
+        message: Strings.syncFailed('$e'),
       );
     }
   }

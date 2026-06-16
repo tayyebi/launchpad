@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
+import '../../core/l10n/strings.dart';
 import '../../providers/task_providers.dart';
 import '../../providers/timer_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -15,13 +16,7 @@ import 'launchpad_tile.dart';
 class LaunchpadScreen extends ConsumerWidget {
   const LaunchpadScreen({super.key});
 
-  String _formatElapsed(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60);
-    final s = d.inSeconds.remainder(60);
-    if (h > 0) return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
+  String _formatElapsed(Duration d) => PersianUtils.formatDuration(d);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,7 +35,7 @@ class LaunchpadScreen extends ConsumerWidget {
 
           return tasksAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
+            error: (e, _) => Center(child: Text('${Strings.error}: $e')),
             data: (tasks) {
               final dailySummary =
                   dailySummaryAsync.whenOrNull(data: (d) => d) ?? {};
@@ -56,7 +51,7 @@ class LaunchpadScreen extends ConsumerWidget {
                         Icon(Icons.dashboard_customize,
                             size: 64, color: Colors.white24),
                         SizedBox(height: 16),
-                        Text('No tasks yet',
+                        Text(Strings.noTasksYet,
                             style: TextStyle(
                                 color: Colors.white54, fontSize: 18)),
                       ],
@@ -153,7 +148,7 @@ class LaunchpadScreen extends ConsumerWidget {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.bar_chart),
-                    tooltip: 'Summary',
+                    tooltip: Strings.summary,
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -162,7 +157,7 @@ class LaunchpadScreen extends ConsumerWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.settings),
-                    tooltip: 'Settings',
+                    tooltip: Strings.settings,
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(

@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import '../l10n/persian_utils.dart';
 
 class TileRenderData {
   final String name;
@@ -143,15 +144,18 @@ void paintTileContent(
     ..strokeWidth = borderWidth;
   canvas.drawRRect(rrect, borderPaint);
 
+  const vazir = 'Vazirmatn';
   final nameStyle = ui.TextStyle(
     color: active ? Colors.white : (isDark ? Colors.white54 : Colors.black54),
     fontWeight: active ? FontWeight.w700 : FontWeight.w500,
     fontSize: 14,
+    fontFamily: vazir,
   );
   final namePara = ui.ParagraphBuilder(ui.ParagraphStyle(
     textAlign: TextAlign.center,
     maxLines: 2,
     ellipsis: '...',
+    textDirection: ui.TextDirection.rtl,
   ))
     ..pushStyle(nameStyle)
     ..addText(data.name);
@@ -170,6 +174,7 @@ void paintTileContent(
       fontSize: 20,
       fontWeight: FontWeight.w700,
       fontFeatures: [const FontFeature.tabularFigures()],
+      fontFamily: vazir,
     );
     final timerPara = ui.ParagraphBuilder(ui.ParagraphStyle(
       textAlign: TextAlign.center,
@@ -190,8 +195,9 @@ void paintTileContent(
       fontSize: 12,
       fontWeight: FontWeight.w500,
       fontFeatures: [const FontFeature.tabularFigures()],
+      fontFamily: vazir,
     );
-    final dailyValue = _formatDuration(data.dailyTotal!);
+    final dailyValue = PersianUtils.formatDurationHHMM(data.dailyTotal!);
     final dailyPara = ui.ParagraphBuilder(ui.ParagraphStyle(
       textAlign: TextAlign.center,
     ))
@@ -231,8 +237,4 @@ void paintTileContent(
   }
 }
 
-String _formatDuration(int seconds) {
-  final h = seconds ~/ 3600;
-  final m = (seconds % 3600) ~/ 60;
-  return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-}
+

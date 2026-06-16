@@ -13,7 +13,10 @@ class LaunchpadApp extends StatelessWidget {
         title: 'Launchpad',
         theme: AppTheme.dark,
         debugShowCheckedModeBanner: false,
-        home: const LaunchpadScreen(),
+        home: const Directionality(
+          textDirection: TextDirection.rtl,
+          child: LaunchpadScreen(),
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../core/l10n/strings.dart';
 import '../../providers/entry_providers.dart';
 import '../../providers/task_providers.dart';
 import '../../core/utils/color_utils.dart';
@@ -18,22 +19,22 @@ class LogsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Logs'),
+        title: const Text(Strings.logs),
         actions: [
           IconButton(
             icon: const Icon(Icons.file_download),
-            tooltip: 'Export CSV',
+            tooltip: Strings.exportCsv,
             onPressed: () => _exportCsv(context, ref),
           ),
         ],
       ),
       body: entriesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => Center(child: Text('${Strings.error}: $e')),
         data: (entries) {
           if (entries.isEmpty) {
             return const Center(
-              child: Text('No entries yet', style: TextStyle(color: Colors.white54)),
+              child: Text(Strings.noEntriesYet, style: TextStyle(color: Colors.white54)),
             );
           }
 
@@ -44,12 +45,12 @@ class LogsScreen extends ConsumerWidget {
           for (int i = 0; i < entries.length; i++) {
             final e = entries[i];
             final dayKey = DateFormat('yyyy-MM-dd').format(e.startTime);
+            final isToday = DateUtils.isSameDay(e.startTime, DateTime.now());
             grouped.putIfAbsent(dayKey, () => []);
             grouped[dayKey]!.add(MapEntry(i, e));
           }
 
-          final dateFormat = DateFormat('MMM d, yyyy');
-          final timeFormat = DateFormat('HH:mm');
+
 
           return ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -65,7 +66,7 @@ class LogsScreen extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
                     child: Text(
-                      isToday ? 'Today' : dateFormat.format(date),
+                      isToday ? Strings.today : PersianUtils.formatDate(date),
                       style: TextStyle(
                         color: Colors.white.withAlpha(180),
                         fontSize: 14,
@@ -78,7 +79,7 @@ class LogsScreen extends ConsumerWidget {
                     final task = taskMap[e.taskName];
                     final clr = task != null ? colorFromInt(task.color) : colorFromInt(colorFromName(e.taskName));
                     final durStr = e.durationSeconds != null
-                        ? _formatDuration(e.durationSeconds!)
+                        ? PersianUtils.formatDurationWords(e.durationSeconds!)
                         : '--:--';
 
                     return Container(
@@ -102,8 +103,8 @@ class LogsScreen extends ConsumerWidget {
                           style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
                         subtitle: Text(
-                          '${timeFormat.format(e.startTime)} - '
-                          '${e.endTime != null ? timeFormat.format(e.endTime!) : 'running'}',
+                          '${PersianUtils.formatTime(e.startTime)} - '
+                          '${e.endTime != null ? PersianUtils.formatTime(e.endTime!) : Strings.running}',
                           style: TextStyle(color: Colors.white.withAlpha(120), fontSize: 12),
                         ),
                         trailing: Text(
@@ -133,14 +134,14 @@ class LogsScreen extends ConsumerWidget {
     if (entries.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No entries to export')),
+          const SnackBar(content: Text(Strings.noEntriesToExport)),
         );
       }
       return;
     }
 
     final buffer = StringBuffer();
-    buffer.writeln('Date,Start,End,Duration (seconds),Task');
+    buffer.writeln('تاریخ,شروع,پایان,مدت (ثانیه),وظیفه');
 
     final dateFormat = DateFormat('yyyy-MM-dd');
     final timeFormat = DateFormat('HH:mm:ss');
@@ -161,7 +162,7 @@ class LogsScreen extends ConsumerWidget {
     if (context.mounted) {
       await Share.shareXFiles(
         [XFile(file.path)],
-        subject: 'Launchpad Logs',
+        subject: 'گزارش‌های Launchpad',
       );
     }
   }
@@ -173,12 +174,5 @@ class LogsScreen extends ConsumerWidget {
     return value;
   }
 
-  String _formatDuration(int seconds) {
-    final h = seconds ~/ 3600;
-    final m = (seconds % 3600) ~/ 60;
-    final s = seconds % 60;
-    if (h > 0) return '${h}h ${m}m';
-    if (m > 0) return '${m}m ${s}s';
-    return '${s}s';
-  }
+
 }

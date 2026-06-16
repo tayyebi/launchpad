@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/l10n/strings.dart';
 import '../../data/models/task.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../providers/task_providers.dart';
@@ -32,11 +33,11 @@ class _TaskConfigDialogState extends ConsumerState<TaskConfigDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Configure Task'),
+      title: const Text(Strings.configureTask),
       content: TextField(
         controller: _nameCtrl,
         decoration: const InputDecoration(
-          labelText: 'Task Name',
+          labelText: Strings.taskName,
           border: OutlineInputBorder(),
         ),
         autofocus: true,
@@ -44,15 +45,15 @@ class _TaskConfigDialogState extends ConsumerState<TaskConfigDialog> {
       actions: [
         TextButton(
           onPressed: () => _deleteTask(context),
-          child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          child: Text(Strings.delete, style: const TextStyle(color: Colors.red)),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: const Text(Strings.cancel),
         ),
         FilledButton(
           onPressed: _save,
-          child: const Text('Save'),
+          child: const Text(Strings.save),
         ),
       ],
     );
@@ -77,13 +78,13 @@ class _TaskConfigDialogState extends ConsumerState<TaskConfigDialog> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Task'),
-        content: Text('Delete "${widget.task.name}"?'),
+        title: const Text(Strings.deleteTask),
+        content: Text(Strings.deleteTaskConfirm(widget.task.name)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text(Strings.cancel)),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          child: Text(Strings.delete, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),

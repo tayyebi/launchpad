@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import '../l10n/strings.dart';
 
 class AppDatabase {
   static final AppDatabase _instance = AppDatabase._();
@@ -119,18 +120,7 @@ class AppDatabase {
 
   Future<void> _seedDefaultTasks(Database db) async {
     final now = DateTime.now().toIso8601String();
-    final defaults = [
-      'Work',
-      'Chill',
-      'Study',
-      'Exercise',
-      'Reading',
-      'Music',
-      'Gaming',
-      'Social',
-      'Cooking',
-      'Chores',
-    ];
+    final defaults = Strings.defaultTasks;
 
     for (int i = 0; i < defaults.length; i++) {
       await db.insert('tasks', {

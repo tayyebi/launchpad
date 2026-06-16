@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import '../../core/l10n/strings.dart';
 import '../../data/repositories/entry_repository.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../core/utils/color_utils.dart';
@@ -21,7 +22,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Summary')),
+      appBar: AppBar(title: const Text(Strings.summary)),
       body: FutureBuilder(
         future: _loadData(),
         builder: (context, snapshot) {
@@ -44,19 +45,19 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                   const Padding(
                     padding: EdgeInsets.only(top: 40),
                     child: Center(
-                      child: Text('No data for this period',
+                      child: Text(Strings.noDataForPeriod,
                           style: TextStyle(color: Colors.white54)),
                     ),
                   )
                 else ...[
                   const SizedBox(height: 24),
-                  const Text('Time per Task',
+                  const Text(Strings.timePerTask,
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 16),
                   SizedBox(height: 200, child: _buildBarChart(result.chartData)),
                 ],
                 const SizedBox(height: 24),
-                const Text('Logs',
+                const Text(Strings.logsTitle,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 16),
                 if (result != null) ..._buildLogs(result.entries),
@@ -69,16 +70,15 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
   }
 
   Widget _buildDateSelector() {
-    final fmt = DateFormat(_weeklyView ? 'MMM d' : 'MMM d, yyyy');
     final label = _weeklyView
-        ? 'Week of ${fmt.format(_selectedDate)}'
-        : fmt.format(_selectedDate);
+        ? '${Strings.weekOf} ${PersianUtils.formatDate(_selectedDate)}'
+        : PersianUtils.formatDate(_selectedDate);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         IconButton(
-          icon: const Icon(Icons.chevron_left),
+          icon: const Icon(Icons.chevron_right),
           onPressed: () {
             setState(() {
               _selectedDate = _weeklyView
@@ -90,7 +90,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
         Text(label,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
         IconButton(
-          icon: const Icon(Icons.chevron_right),
+          icon: const Icon(Icons.chevron_left),
           onPressed: () {
             setState(() {
               _selectedDate = _weeklyView
@@ -148,15 +148,12 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
         const Padding(
           padding: EdgeInsets.only(bottom: 16),
           child: Center(
-            child: Text('No entries for this period',
+            child: Text(Strings.noEntriesForPeriod,
                 style: TextStyle(color: Colors.white54)),
           ),
         ),
       ];
     }
-
-    final dateFormat = DateFormat('MMM d, yyyy');
-    final timeFormat = DateFormat('HH:mm');
 
     final grouped = <String, List<Map<String, dynamic>>>{};
     for (final e in entries) {
@@ -174,7 +171,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
       widgets.add(Padding(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
         child: Text(
-          isToday ? 'Today' : dateFormat.format(date),
+          isToday ? Strings.today : PersianUtils.formatDate(date),
           style: TextStyle(
             color: Colors.white.withAlpha(180),
             fontSize: 14,
@@ -185,7 +182,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
 
       for (final e in dayEntry.value) {
         final entryId = e['id'] as String;
-        final taskName = e['task_name'] as String? ?? 'Unknown';
+        final taskName = e['task_name'] as String? ?? Strings.unknown;
         final taskColor = colorFromInt(colorFromName(taskName));
         final startTime = DateTime.parse(e['start_time'] as String);
         final endTimeStr = e['end_time'] as String?;
@@ -194,7 +191,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
         final durationSeconds = e['duration_seconds'] as int?;
 
         final durStr = durationSeconds != null
-            ? _formatDuration(durationSeconds)
+            ? PersianUtils.formatDurationHHMM(durationSeconds)
             : '--:--';
 
         widgets.add(Dismissible(
@@ -209,7 +206,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
               color: Colors.red.withAlpha(40),
               borderRadius: BorderRadius.circular(10),
             ),
-            alignment: Alignment.centerRight,
+            alignment: AlignmentDirectional.centerEnd,
             child: Container(
               width: 70,
               height: double.infinity,
@@ -221,16 +218,16 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (ctx) => AlertDialog(
-                title: const Text('Delete Entry'),
-                content: Text('Delete this entry for "$taskName"?'),
+                title: const Text(Strings.deleteEntry),
+                content: Text(Strings.deleteEntryConfirm(taskName)),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Cancel'),
+                    child: const Text(Strings.cancel),
                   ),
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                    child: Text(Strings.delete, style: const TextStyle(color: Colors.red)),
                   ),
                 ],
               ),
@@ -262,8 +259,8 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
               title: Text(taskName,
                   style: const TextStyle(fontWeight: FontWeight.w500)),
               subtitle: Text(
-                '${timeFormat.format(startTime)} - '
-                '${endTime != null ? timeFormat.format(endTime) : 'running'}',
+                '${PersianUtils.formatTime(startTime)} - '
+                '${endTime != null ? PersianUtils.formatTime(endTime) : Strings.running}',
                 style: TextStyle(color: Colors.white.withAlpha(120), fontSize: 12),
               ),
               trailing: Text(
@@ -308,7 +305,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                     touchTooltipData: BarTouchTooltipData(
                       getTooltipItem: (group, groupIndex, rod, rodIndex) {
                         return BarTooltipItem(
-                          '${data[groupIndex].label}\n${_formatDuration(rod.toY.round())}',
+                          '${data[groupIndex].label}\n${PersianUtils.formatDurationHHMM(rod.toY.round())}',
                           const TextStyle(color: Colors.white, fontSize: 12),
                         );
                       },
@@ -326,9 +323,9 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                         getTitlesWidget: (value, meta) {
                           if (value == midY || value == chartMaxY) {
                             return Padding(
-                              padding: const EdgeInsets.only(right: 4),
+                              padding: const EdgeInsetsDirectional.only(end: 4),
                               child: Text(
-                                _formatDuration(value.toInt()),
+                                PersianUtils.formatDurationHHMM(value.toInt()),
                                 style: const TextStyle(
                                     fontSize: 10, color: Colors.white38),
                               ),
@@ -419,11 +416,6 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
     );
   }
 
-  String _formatDuration(int seconds) {
-    final h = seconds ~/ 3600;
-    final m = (seconds % 3600) ~/ 60;
-    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-  }
 }
 
 class _SummaryData {
