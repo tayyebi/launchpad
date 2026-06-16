@@ -200,15 +200,22 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
         widgets.add(Dismissible(
           key: Key(entryId),
           direction: DismissDirection.endToStart,
+          dismissThresholds: const {
+            DismissDirection.endToStart: 0.2,
+          },
           background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 20),
             margin: const EdgeInsets.only(bottom: 6),
             decoration: BoxDecoration(
               color: Colors.red.withAlpha(40),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.delete, color: Colors.red),
+            alignment: Alignment.centerRight,
+            child: Container(
+              width: 70,
+              height: double.infinity,
+              alignment: Alignment.center,
+              child: const Icon(Icons.delete, color: Colors.red),
+            ),
           ),
           confirmDismiss: (direction) async {
             final confirmed = await showDialog<bool>(
@@ -279,80 +286,136 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
 
   Widget _buildBarChart(List<_ChartData> data) {
     final maxY = data.fold(0.0, (m, d) => d.value > m ? d.value : m);
-    return BarChart(
-      BarChartData(
-        alignment: BarChartAlignment.spaceAround,
-        maxY: maxY * 1.2,
-        barTouchData: BarTouchData(
-          touchTooltipData: BarTouchTooltipData(
-            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              return BarTooltipItem(
-                '${data[groupIndex].label}\n${_formatDuration(rod.toY.round())}',
-                const TextStyle(color: Colors.white, fontSize: 12),
-              );
-            },
-          ),
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                final idx = value.toInt();
-                if (idx < 0 || idx >= data.length) return const SizedBox();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    data[idx].label.length > 6
-                        ? '${data[idx].label.substring(0, 6)}..'
-                        : data[idx].label,
-                    style:
-                        const TextStyle(fontSize: 10, color: Colors.white54),
+    final chartMaxY = maxY * 1.2;
+    final midY = chartMaxY / 2;
+    const leftMargin = 42.0;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final plotWidth = constraints.maxWidth - leftMargin;
+        final n = data.length;
+
+        return SizedBox(
+          width: constraints.maxWidth,
+          height: constraints.maxHeight,
+          child: Stack(
+            children: [
+              BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  maxY: chartMaxY,
+                  barTouchData: BarTouchData(
+                    touchTooltipData: BarTouchTooltipData(
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        return BarTooltipItem(
+                          '${data[groupIndex].label}\n${_formatDuration(rod.toY.round())}',
+                          const TextStyle(color: Colors.white, fontSize: 12),
+                        );
+                      },
+                    ),
                   ),
-                );
-              },
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 42,
-              getTitlesWidget: (value, meta) {
-                return Text(
-                  _formatDuration(value.toInt()),
-                  style: const TextStyle(fontSize: 10, color: Colors.white38),
-                );
-              },
-            ),
-          ),
-          topTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        ),
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: maxY > 0 ? maxY / 4 : 1,
-        ),
-        barGroups: data.asMap().entries.map((entry) {
-          return BarChartGroupData(
-            x: entry.key,
-            barRods: [
-              BarChartRodData(
-                toY: entry.value.value,
-                color: entry.value.color,
-                width: 20,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(4),
-                  topRight: Radius.circular(4),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    bottomTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: leftMargin,
+                        interval: midY,
+                        getTitlesWidget: (value, meta) {
+                          if (value == midY || value == chartMaxY) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: Text(
+                                _formatDuration(value.toInt()),
+                                style: const TextStyle(
+                                    fontSize: 10, color: Colors.white38),
+                              ),
+                            );
+                          }
+                          return const SizedBox();
+                        },
+                      ),
+                    ),
+                    topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                  ),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: midY,
+                    checkToShowHorizontalLine: (value) {
+                      return value == midY || value == chartMaxY;
+                    },
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: Colors.white24,
+                        strokeWidth: 1,
+                        dashArray: [4, 4],
+                      );
+                    },
+                  ),
+                  barGroups: data.asMap().entries.map((entry) {
+                    return BarChartGroupData(
+                      x: entry.key,
+                      barRods: [
+                        BarChartRodData(
+                          toY: entry.value.value,
+                          color: entry.value.color,
+                          width: 20,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(4),
+                            topRight: Radius.circular(4),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
                 ),
               ),
+              ...data.asMap().entries.map((entry) {
+                final centerX =
+                    leftMargin + plotWidth * (2 * entry.key + 1) / (2 * n);
+                final labelWidth = plotWidth / n;
+                final barHeightRatio = entry.value.value / chartMaxY;
+                final barHeight = barHeightRatio * constraints.maxHeight;
+                final showInside = barHeight > 18;
+
+                return Positioned(
+                  left: centerX - labelWidth / 2,
+                  top: showInside
+                      ? constraints.maxHeight - barHeight + 4
+                      : constraints.maxHeight - barHeight - 14,
+                  width: labelWidth,
+                  child: Text(
+                    entry.value.label,
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: showInside
+                          ? Colors.white.withAlpha(200)
+                          : Colors.white70,
+                      fontWeight: FontWeight.w500,
+                      shadows: const [
+                        Shadow(
+                          color: Colors.black54,
+                          blurRadius: 2,
+                          offset: Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                );
+              }),
             ],
-          );
-        }).toList(),
-      ),
+          ),
+        );
+      },
     );
   }
 
