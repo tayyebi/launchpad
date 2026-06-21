@@ -66,6 +66,17 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Card(
+            child: SwitchListTile(
+              title: const Text(Strings.multitasking),
+              subtitle: Text(Strings.multitaskingDesc(maxConcurrentTasks)),
+              value: settings.multitaskingEnabled,
+              onChanged: (v) {
+                ref.read(settingsProvider.notifier).setMultitasking(v);
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -95,7 +106,7 @@ class SettingsScreen extends ConsumerWidget {
                       }
                       return Column(
                         children: tasks.map((task) {
-                          final active = ref.watch(timerProvider).activeTaskName == task.name;
+                          final active = ref.watch(timerProvider).activeTaskNames.contains(task.name);
                           return ListTile(
                             dense: true,
                             leading: Container(

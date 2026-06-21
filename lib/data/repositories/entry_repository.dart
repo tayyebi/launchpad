@@ -28,14 +28,13 @@ class EntryRepository {
     return maps.map(TimeEntry.fromMap).toList();
   }
 
-  Future<TimeEntry?> getActiveEntry() async {
+  Future<List<TimeEntry>> getActiveEntries() async {
     final maps = await _db.db.query(
       'time_entries',
       where: 'end_time IS NULL',
-      limit: 1,
+      orderBy: 'start_time ASC',
     );
-    if (maps.isEmpty) return null;
-    return TimeEntry.fromMap(maps.first);
+    return maps.map(TimeEntry.fromMap).toList();
   }
 
   Future<TimeEntry> startEntry(String taskName) async {

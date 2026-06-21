@@ -23,6 +23,9 @@ class Strings {
   static const String noTasks = 'وظیفه‌ای وجود ندارد';
   static const String active = 'فعال';
   static const String viewLogs = 'بارگیری گزارش‌ها';
+  static const String multitasking = 'چندوظیفگی';
+  static String multitaskingDesc(int n) =>
+      'اجازهٔ ${PersianUtils.toPersianDigits(n)} وظیفه همزمان';
   static const String newTask = 'وظیفه جدید';
 
   static const String logs = 'گزارش‌ها';

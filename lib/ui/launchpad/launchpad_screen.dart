@@ -66,9 +66,11 @@ class LaunchpadScreen extends ConsumerWidget {
               for (int i = 0; i < tiles; i++) {
                 if (i < tasks.length) {
                   final task = tasks[i];
-                  final isActive = timerState.activeTaskName == task.name;
-                  final elapsed =
-                      isActive ? _formatElapsed(timerState.elapsed) : null;
+                  final isActive = timerState.activeTaskNames.contains(task.name);
+                  final elapsed = isActive
+                      ? _formatElapsed(
+                          timerState.elapsedByTask[task.name] ?? Duration.zero)
+                      : null;
                   final dailyTotal = dailySummary[task.name] ?? 0;
 
                   children.add(LaunchpadTile(
@@ -121,7 +123,9 @@ class LaunchpadScreen extends ConsumerWidget {
                         await ref.read(tasksProvider.future);
                     WidgetService.updateWidget(
                       tasks: updatedTasks,
-                      activeTaskName: timerState.activeTaskName,
+                      activeTaskName: timerState.activeTaskNames.isNotEmpty
+                          ? timerState.activeTaskNames.first
+                          : null,
                       gridSize: gridSize,
                     );
                   },

@@ -83,8 +83,8 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
           onPressed: () {
             setState(() {
               _selectedDate = _weeklyView
-                  ? _selectedDate.subtract(const Duration(days: 7))
-                  : _selectedDate.subtract(const Duration(days: 1));
+                  ? _selectedDate.add(const Duration(days: 7))
+                  : _selectedDate.add(const Duration(days: 1));
             });
           },
         ),
@@ -95,8 +95,8 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
           onPressed: () {
             setState(() {
               _selectedDate = _weeklyView
-                  ? _selectedDate.add(const Duration(days: 7))
-                  : _selectedDate.add(const Duration(days: 1));
+                  ? _selectedDate.subtract(const Duration(days: 7))
+                  : _selectedDate.subtract(const Duration(days: 1));
             });
           },
         ),
@@ -169,15 +169,35 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
       final date = DateTime.parse(dayEntry.key);
       final isToday = DateUtils.isSameDay(date, DateTime.now());
 
+      final dayTotalSeconds = dayEntry.value.fold<int>(
+        0,
+        (sum, e) => sum + ((e['duration_seconds'] as int?) ?? 0),
+      );
+
       widgets.add(Padding(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-        child: Text(
-          isToday ? Strings.today : PersianUtils.formatDate(date),
-          style: TextStyle(
-            color: Colors.white.withAlpha(180),
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                isToday ? Strings.today : PersianUtils.formatDate(date),
+                style: TextStyle(
+                  color: Colors.white.withAlpha(180),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Text(
+              PersianUtils.formatDurationHHMM(dayTotalSeconds),
+              style: TextStyle(
+                color: Colors.white.withAlpha(120),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
         ),
       ));
 
