@@ -15,6 +15,7 @@ class Strings {
   static const String save = 'ذخیره';
   static const String deleteTask = 'حذف وظیفه';
   static String deleteTaskConfirm(String name) => 'آیا «$name» حذف شود؟';
+  static const String cannotDeleteRunningTask = 'نمی‌توان وظیفهٔ در حال اجرا را حذف کرد. ابتدا آن را متوقف کنید.';
 
   static const String gridSize = 'اندازه شبکه';
   static String slotsCount(int n) => 'تعداد ${PersianUtils.toPersianDigits(n)} خانه';

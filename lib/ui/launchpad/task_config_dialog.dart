@@ -4,6 +4,7 @@ import '../../core/l10n/strings.dart';
 import '../../data/models/task.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../providers/task_providers.dart';
+import '../../providers/timer_provider.dart';
 import '../../services/widget_service.dart';
 
 class TaskConfigDialog extends ConsumerStatefulWidget {
@@ -75,6 +76,19 @@ class _TaskConfigDialogState extends ConsumerState<TaskConfigDialog> {
   }
 
   Future<void> _deleteTask(BuildContext context) async {
+    final timerState = ref.read(timerProvider);
+    if (timerState.activeTaskNames.contains(widget.task.name)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(Strings.cannotDeleteRunningTask),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(

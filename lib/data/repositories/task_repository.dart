@@ -62,7 +62,12 @@ class TaskRepository {
   }
 
   Future<List<Task>> getActiveTasks() async {
-    final maps = await _db.db.query('tasks', orderBy: 'grid_position ASC');
+    final maps = await _db.db.rawQuery('''
+      SELECT DISTINCT tasks.* FROM tasks
+      INNER JOIN time_entries ON time_entries.task_name = tasks.name
+      WHERE time_entries.end_time IS NULL
+      ORDER BY tasks.grid_position ASC
+    ''');
     return maps.map(Task.fromMap).toList();
   }
 

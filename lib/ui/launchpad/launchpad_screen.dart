@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,13 +15,52 @@ import '../settings/settings_screen.dart';
 import '../summary/summary_screen.dart';
 import 'launchpad_tile.dart';
 
-class LaunchpadScreen extends ConsumerWidget {
+class LaunchpadScreen extends ConsumerStatefulWidget {
   const LaunchpadScreen({super.key});
+
+  @override
+  ConsumerState<LaunchpadScreen> createState() => _LaunchpadScreenState();
+}
+
+class _LaunchpadScreenState extends ConsumerState<LaunchpadScreen> {
+  List<int>? _shuffledOrder;
+  int _cycleId = 0;
+  Timer? _cycleTimer;
+  bool _wasIdle = true;
+
+  @override
+  void dispose() {
+    _cycleTimer?.cancel();
+    super.dispose();
+  }
+
+  void _updateWiggleCycle(bool isIdle, int taskCount) {
+    if (isIdle == _wasIdle && _shuffledOrder?.length == taskCount) return;
+    _wasIdle = isIdle;
+
+    _cycleTimer?.cancel();
+    if (!isIdle || taskCount == 0) {
+      _shuffledOrder = null;
+      return;
+    }
+
+    _shuffledOrder = List.generate(taskCount, (i) => i)..shuffle();
+    _cycleId++;
+
+    final cycleDuration =
+        Duration(milliseconds: max(taskCount * 1000, 1000) + 3000);
+    _cycleTimer = Timer.periodic(cycleDuration, (_) {
+      if (!mounted || _shuffledOrder == null) return;
+      _shuffledOrder!.shuffle();
+      _cycleId++;
+      if (mounted) setState(() {});
+    });
+  }
 
   String _formatElapsed(Duration d) => PersianUtils.formatDuration(d);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final tasksAsync = ref.watch(tasksProvider);
     final timerState = ref.watch(timerProvider);
     final settings = ref.watch(settingsProvider);
@@ -42,6 +83,7 @@ class LaunchpadScreen extends ConsumerWidget {
               final showDaily = gridSize <= 3;
 
               if (tasks.isEmpty) {
+                _updateWiggleCycle(false, 0);
                 return Padding(
                   padding: EdgeInsets.only(top: topPad),
                   child: const Center(
@@ -60,24 +102,34 @@ class LaunchpadScreen extends ConsumerWidget {
                 );
               }
 
+              final isIdle = timerState.activeTaskNames.isEmpty;
+              _updateWiggleCycle(isIdle, tasks.length);
+
               final tiles = gridSize * gridSize;
               final children = <Widget>[];
 
               for (int i = 0; i < tiles; i++) {
                 if (i < tasks.length) {
                   final task = tasks[i];
-                  final isActive = timerState.activeTaskNames.contains(task.name);
+                  final isActive =
+                      timerState.activeTaskNames.contains(task.name);
                   final elapsed = isActive
                       ? _formatElapsed(
                           timerState.elapsedByTask[task.name] ?? Duration.zero)
                       : null;
                   final dailyTotal = dailySummary[task.name] ?? 0;
 
+                  final wiggleAfterMs = _shuffledOrder != null
+                      ? _shuffledOrder!.indexOf(i) * 1000
+                      : null;
+
                   children.add(LaunchpadTile(
                     key: ValueKey(task.name),
                     name: task.name,
                     color: task.color,
                     isActive: isActive,
+                    wiggleAfterMs: wiggleAfterMs,
+                    cycleId: _cycleId,
                     elapsed: elapsed,
                     dailyTotal: showDaily ? dailyTotal : null,
                     onTap: () =>

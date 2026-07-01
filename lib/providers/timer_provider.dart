@@ -115,7 +115,7 @@ class TimerNotifier extends StateNotifier<TimerState> {
       state = state.copyWith(isLoading: false);
       _ref.invalidate(allEntriesProvider);
       _ref.invalidate(tasksProvider);
-      final tasks = await _taskRepo.getActiveTasks();
+      final tasks = await _taskRepo.getAll();
       WidgetService.updateWidget(
         tasks: tasks,
         activeTaskName:
