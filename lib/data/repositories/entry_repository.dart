@@ -8,6 +8,15 @@ const _uuid = Uuid();
 class EntryRepository {
   final AppDatabase _db = AppDatabase.instance;
 
+  int _overlapSeconds(DateTime entryStart, DateTime entryEnd,
+      DateTime rangeStart, DateTime rangeEnd) {
+    final start =
+        entryStart.isAfter(rangeStart) ? entryStart : rangeStart;
+    final end = entryEnd.isBefore(rangeEnd) ? entryEnd : rangeEnd;
+    if (start.isBefore(end)) return end.difference(start).inSeconds;
+    return 0;
+  }
+
   Future<List<TimeEntry>> getAll({int? limit, int? offset}) async {
     final maps = await _db.db.query(
       'time_entries',
@@ -103,56 +112,75 @@ class EntryRepository {
   }
 
   Future<Map<String, int>> getDailySummary(DateTime date) async {
-    final start = DateTime(date.year, date.month, date.day);
-    final end = start.add(const Duration(days: 1));
+    final dayStart = DateTime(date.year, date.month, date.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
     final maps = await _db.db.rawQuery('''
-      SELECT task_name, COALESCE(SUM(duration_seconds), 0) as total
+      SELECT task_name, start_time, end_time, duration_seconds
       FROM time_entries
-      WHERE start_time >= ? AND start_time < ? AND duration_seconds IS NOT NULL
-      GROUP BY task_name
-    ''', [start.toIso8601String(), end.toIso8601String()]);
+      WHERE start_time < ? AND end_time >= ? AND duration_seconds IS NOT NULL
+    ''', [dayEnd.toIso8601String(), dayStart.toIso8601String()]);
 
     final result = <String, int>{};
     for (final m in maps) {
-      result[m['task_name'] as String] = m['total'] as int;
+      final entryStart = DateTime.parse(m['start_time'] as String);
+      final entryEnd = DateTime.parse(m['end_time'] as String);
+      final overlap =
+          _overlapSeconds(entryStart, entryEnd, dayStart, dayEnd);
+      if (overlap > 0) {
+        final taskName = m['task_name'] as String;
+        result[taskName] = (result[taskName] ?? 0) + overlap;
+      }
     }
     return result;
   }
 
   Future<Map<String, int>> getWeeklySummary(DateTime weekStart) async {
-    final end = weekStart.add(const Duration(days: 7));
+    final weekEnd = weekStart.add(const Duration(days: 7));
     final maps = await _db.db.rawQuery('''
-      SELECT task_name, COALESCE(SUM(duration_seconds), 0) as total
+      SELECT task_name, start_time, end_time, duration_seconds
       FROM time_entries
-      WHERE start_time >= ? AND start_time < ? AND duration_seconds IS NOT NULL
-      GROUP BY task_name
-    ''', [weekStart.toIso8601String(), end.toIso8601String()]);
+      WHERE start_time < ? AND end_time >= ? AND duration_seconds IS NOT NULL
+    ''', [weekEnd.toIso8601String(), weekStart.toIso8601String()]);
 
     final result = <String, int>{};
     for (final m in maps) {
-      result[m['task_name'] as String] = m['total'] as int;
+      final entryStart = DateTime.parse(m['start_time'] as String);
+      final entryEnd = DateTime.parse(m['end_time'] as String);
+      final overlap =
+          _overlapSeconds(entryStart, entryEnd, weekStart, weekEnd);
+      if (overlap > 0) {
+        final taskName = m['task_name'] as String;
+        result[taskName] = (result[taskName] ?? 0) + overlap;
+      }
     }
     return result;
   }
 
-  Future<List<Map<String, dynamic>>> getEntriesInRange(DateTime start, DateTime end) async {
-    return await _db.db.rawQuery('''
+  Future<List<Map<String, dynamic>>> getEntriesInRange(
+      DateTime start, DateTime end) async {
+    final rows = await _db.db.rawQuery('''
       SELECT time_entries.*, tasks.name as task_name_ref
       FROM time_entries
       LEFT JOIN tasks ON tasks.name = time_entries.task_name
-      WHERE time_entries.start_time >= ? AND time_entries.start_time < ?
+      WHERE time_entries.start_time < ? AND (time_entries.end_time IS NULL OR time_entries.end_time >= ?)
       ORDER BY time_entries.start_time DESC
-    ''', [start.toIso8601String(), end.toIso8601String()]);
+    ''', [end.toIso8601String(), start.toIso8601String()]);
+
+    for (final row in rows) {
+      final endTimeStr = row['end_time'] as String?;
+      if (endTimeStr != null) {
+        final entryStart = DateTime.parse(row['start_time'] as String);
+        final entryEnd = DateTime.parse(endTimeStr);
+        row['_overlap_seconds'] =
+            _overlapSeconds(entryStart, entryEnd, start, end);
+      }
+    }
+    return rows;
   }
 
   Future<List<Map<String, dynamic>>> getDailyBreakdown(DateTime date) async {
-    final start = DateTime(date.year, date.month, date.day);
-    final end = start.add(const Duration(days: 1));
-    return await _db.db.rawQuery('''
-      SELECT time_entries.*
-      FROM time_entries
-      WHERE time_entries.start_time >= ? AND time_entries.start_time < ?
-      ORDER BY time_entries.start_time DESC
-    ''', [start.toIso8601String(), end.toIso8601String()]);
+    final dayStart = DateTime(date.year, date.month, date.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    return await getEntriesInRange(dayStart, dayEnd);
   }
 }

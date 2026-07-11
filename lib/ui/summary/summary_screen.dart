@@ -61,7 +61,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                 const Text(Strings.logsTitle,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 16),
-                if (result != null) ..._buildLogs(result.entries),
+                if (result != null) ..._buildLogs(result.entries, result.rangeStart),
               ],
             ),
           );
@@ -140,10 +140,12 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
 
     final entries = await entryRepo.getEntriesInRange(rangeStart, rangeEnd);
 
-    return _SummaryData(chartData: chartData, entries: entries);
+    return _SummaryData(
+        chartData: chartData, entries: entries, rangeStart: rangeStart);
   }
 
-  List<Widget> _buildLogs(List<Map<String, dynamic>> entries) {
+  List<Widget> _buildLogs(
+      List<Map<String, dynamic>> entries, DateTime rangeStart) {
     if (entries.isEmpty) {
       return [
         const Padding(
@@ -159,7 +161,17 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
     final grouped = <String, List<Map<String, dynamic>>>{};
     for (final e in entries) {
       final startTime = DateTime.parse(e['start_time'] as String);
-      final dayKey = DateFormat('yyyy-MM-dd').format(startTime);
+      final endTimeStr = e['end_time'] as String?;
+      final endTime = endTimeStr != null ? DateTime.parse(endTimeStr) : null;
+
+      final dayStart =
+          DateTime(rangeStart.year, rangeStart.month, rangeStart.day);
+      String dayKey;
+      if (endTime != null && startTime.isBefore(dayStart)) {
+        dayKey = DateFormat('yyyy-MM-dd').format(dayStart);
+      } else {
+        dayKey = DateFormat('yyyy-MM-dd').format(startTime);
+      }
       grouped.putIfAbsent(dayKey, () => []);
       grouped[dayKey]!.add(e);
     }
@@ -171,7 +183,8 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
 
       final dayTotalSeconds = dayEntry.value.fold<int>(
         0,
-        (sum, e) => sum + ((e['duration_seconds'] as int?) ?? 0),
+        (sum, e) =>
+            sum + ((e['_overlap_seconds'] as int?) ?? (e['duration_seconds'] as int?) ?? 0),
       );
 
       widgets.add(Padding(
@@ -450,10 +463,12 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
 class _SummaryData {
   final List<_ChartData> chartData;
   final List<Map<String, dynamic>> entries;
+  final DateTime rangeStart;
 
   const _SummaryData({
     required this.chartData,
     required this.entries,
+    required this.rangeStart,
   });
 }
 
