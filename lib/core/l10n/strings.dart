@@ -3,6 +3,11 @@ import 'persian_utils.dart';
 export 'persian_utils.dart';
 
 class Strings {
+  /// Keep in sync with `version:` in pubspec.yaml and `versionName` in
+  /// android/app/build.gradle. Sent along with feedback so a report can be
+  /// tied to the build it came from.
+  static const String appVersion = '1.6.2';
+
   static const String summary = 'خلاصه';
   static const String settings = 'تنظیمات';
   static const String noTasksYet = 'هنوز کاری اضافه نشده';
@@ -49,6 +54,14 @@ class Strings {
   static const String deleteEntry = 'حذف مورد';
   static String deleteEntryConfirm(String name) => 'آیا این مورد برای «$name» حذف شود؟';
   static const String unknown = 'ناشناخته';
+
+  static const String feedback = 'ارسال بازخورد';
+  static const String feedbackSubtitle = 'پیامک به توسعه‌دهنده';
+  static const String feedbackNumber = '+989388063351';
+  static const String feedbackBody =
+      'سلام،\nبازخورد من دربارهٔ لانچ‌پد (نسخهٔ $appVersion):\n\n';
+  static const String feedbackFailed =
+      'برنامهٔ پیامک باز نشد. شماره: $feedbackNumber';
 
   static const String timerChannelName = 'زمان‌سنج';
   static const String timerRunning = 'در حال اجرا';

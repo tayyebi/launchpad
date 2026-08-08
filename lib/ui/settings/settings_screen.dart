@@ -3,8 +3,10 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -258,9 +260,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onTap: () => _exportCsv(context),
             ),
           ),
+          const SizedBox(height: 16),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.sms_outlined),
+              title: const Text(Strings.feedback),
+              subtitle: const Text(Strings.feedbackSubtitle),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _sendFeedback(context),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  /// Opens the device's SMS app with the developer's number and a prefilled
+  /// greeting, so the user only has to type the feedback itself.
+  Future<void> _sendFeedback(BuildContext context) async {
+    final uri = Uri.parse(
+      'sms:${Strings.feedbackNumber}'
+      '?body=${Uri.encodeComponent(Strings.feedbackBody)}',
+    );
+
+    var opened = false;
+    try {
+      opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } on PlatformException {
+      opened = false;
+    }
+
+    // Devices without an SMS app (or with it disabled) would otherwise fail
+    // silently, so surface the number to fall back on.
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(Strings.feedbackFailed)),
+      );
+    }
   }
 
   static const String _exportFileName = 'launchpad_logs.csv';
