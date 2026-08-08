@@ -50,6 +50,10 @@ class Strings {
   static String deleteEntryConfirm(String name) => 'آیا این مورد برای «$name» حذف شود؟';
   static const String unknown = 'ناشناخته';
 
+  static const String timerChannelName = 'زمان‌سنج';
+  static const String timerRunning = 'در حال اجرا';
+  static String timerAlsoRunning(String names) => 'همچنین: $names';
+
   static String syncedEntries(int n) => '${PersianUtils.toPersianDigits(n)} مورد همگام‌سازی شد';
   static String syncFailed(String e) => 'همگام‌سازی ناموفق: $e';
 

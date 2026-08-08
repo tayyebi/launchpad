@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/models/time_entry.dart';
 import '../data/repositories/entry_repository.dart';
 import '../data/repositories/task_repository.dart';
+import '../services/timer_notification_service.dart';
 import '../services/widget_service.dart';
 import 'entry_providers.dart';
 import 'task_providers.dart';
@@ -65,7 +66,28 @@ class TimerNotifier extends StateNotifier<TimerState> {
       _saveActiveTaskNames(activeEntries.keys.toList());
       _startTicking();
     }
+    // Runs on construction, so a timer left running across an app restart gets
+    // its lock-screen notification back with the correct elapsed time.
+    _syncNotification();
     _ref.invalidate(tasksProvider);
+  }
+
+  /// Single point that mirrors the active entries onto the lock screen, in the
+  /// same spirit as the WidgetService.updateWidget calls.
+  void _syncNotification() {
+    final entries = state.activeEntries.values.toList();
+    if (entries.isEmpty) {
+      TimerNotificationService.hide();
+      return;
+    }
+
+    // Only one chronometer per notification, so the longest-running task gets it.
+    entries.sort((a, b) => a.startTime.compareTo(b.startTime));
+    TimerNotificationService.show(
+      taskName: entries.first.taskName,
+      startTime: entries.first.startTime,
+      otherTasks: entries.skip(1).map((e) => e.taskName).toList(),
+    );
   }
 
   void _startTicking() {
@@ -135,6 +157,7 @@ class TimerNotifier extends StateNotifier<TimerState> {
       elapsedByTask: {...state.elapsedByTask, taskName: Duration.zero},
     );
     _saveActiveTaskNames(activeTaskNames.toList());
+    _syncNotification();
     _startTicking();
   }
 
@@ -157,6 +180,7 @@ class TimerNotifier extends StateNotifier<TimerState> {
       activeTaskNames: activeTaskNames,
     );
     _saveActiveTaskNames(activeTaskNames.toList());
+    _syncNotification();
     if (activeEntries.isEmpty) {
       _tickTimer?.cancel();
     }

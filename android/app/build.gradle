@@ -51,3 +51,8 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // NotificationCompat / ContextCompat / ActivityCompat for TimerService.
+    implementation "androidx.core:core-ktx:1.13.1"
+}
