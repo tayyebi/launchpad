@@ -35,6 +35,11 @@ class Strings {
   static const String today = 'امروز';
   static const String running = 'در حال اجرا';
   static const String noEntriesToExport = 'موردی برای خروجی وجود ندارد';
+  static const String exportTitle = 'خروجی گزارش‌ها';
+  static const String saveToDevice = 'ذخیره در دستگاه';
+  static const String shareFile = 'اشتراک‌گذاری';
+  static const String fileSaved = 'فایل ذخیره شد';
+  static const String exportSubject = 'گزارش‌های Launchpad';
 
   static const String weekOf = 'هفتهٔ';
   static const String noDataForPeriod = 'داده‌ای برای این دوره وجود ندارد';

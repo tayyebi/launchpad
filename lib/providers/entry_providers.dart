@@ -6,9 +6,11 @@ final entryRepositoryProvider = Provider<EntryRepository>((ref) {
   return EntryRepository();
 });
 
+// Unbounded on purpose: the CSV export is the only reader, and truncating here
+// silently dropped every entry beyond the newest 200 from the exported file.
 final allEntriesProvider = FutureProvider<List<TimeEntry>>((ref) async {
   final repo = ref.watch(entryRepositoryProvider);
-  return repo.getAll(limit: 200);
+  return repo.getAll();
 });
 
 final dailySummaryProvider = FutureProvider<Map<String, int>>((ref) async {

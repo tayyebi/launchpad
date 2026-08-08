@@ -1,11 +1,15 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../core/l10n/strings.dart';
+import '../../data/models/time_entry.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/task_providers.dart';
 import '../../providers/timer_provider.dart';
@@ -15,6 +19,8 @@ import '../../data/models/task.dart';
 import '../../core/utils/color_utils.dart';
 import '../../services/widget_service.dart';
 import '../launchpad/task_config_dialog.dart';
+
+enum _ExportAction { save, share }
 
 class _GlidingListTile extends StatefulWidget {
   final Task task;
@@ -257,6 +263,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  static const String _exportFileName = 'launchpad_logs.csv';
+
   Future<void> _exportCsv(BuildContext context) async {
     final entries = await ref.read(allEntriesProvider.future);
 
@@ -269,8 +277,79 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       return;
     }
 
-    final buffer = StringBuffer();
-    buffer.writeln('تاریخ,شروع,پایان,مدت (ثانیه),وظیفه');
+    if (!context.mounted) return;
+    final action = await _pickExportAction(context);
+    if (action == null) return;
+
+    // Both branches share these bytes, so the encoding cannot drift apart.
+    final bytes = _buildCsvBytes(entries);
+
+    if (action == _ExportAction.save) {
+      final path = await FilePicker.platform.saveFile(
+        fileName: _exportFileName,
+        bytes: bytes,
+        type: FileType.custom,
+        allowedExtensions: const ['csv'],
+      );
+      if (path != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(Strings.fileSaved)),
+        );
+      }
+      return;
+    }
+
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/$_exportFileName');
+    await file.writeAsBytes(bytes);
+
+    if (context.mounted) {
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'text/csv')],
+        subject: Strings.exportSubject,
+      );
+    }
+  }
+
+  Future<_ExportAction?> _pickExportAction(BuildContext context) {
+    return showModalBottomSheet<_ExportAction>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+              child: Text(
+                Strings.exportTitle,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.save_alt),
+              title: const Text(Strings.saveToDevice),
+              onTap: () => Navigator.pop(ctx, _ExportAction.save),
+            ),
+            ListTile(
+              leading: const Icon(Icons.share),
+              title: const Text(Strings.shareFile),
+              onTap: () => Navigator.pop(ctx, _ExportAction.share),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Encodes the log as UTF-8 prefixed with a byte-order mark. Excel only
+  /// detects UTF-8 when the BOM is present; without it the Persian headers and
+  /// task names open as mojibake. CRLF terminators keep Excel happy too.
+  Uint8List _buildCsvBytes(List<TimeEntry> entries) {
+    final buffer = StringBuffer('\u{FEFF}');
+    buffer.write('تاریخ,شروع,پایان,مدت (ثانیه),وظیفه\r\n');
 
     final dateFormat = DateFormat('yyyy-MM-dd');
     final timeFormat = DateFormat('HH:mm:ss');
@@ -281,23 +360,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final end = e.endTime != null ? timeFormat.format(e.endTime!) : '';
       final dur = e.durationSeconds?.toString() ?? '';
       final task = _escapeCsv(e.taskName);
-      buffer.writeln('$date,$start,$end,$dur,$task');
+      buffer.write('$date,$start,$end,$dur,$task\r\n');
     }
 
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/launchpad_logs.csv');
-    await file.writeAsString(buffer.toString());
-
-    if (context.mounted) {
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        subject: 'گزارش‌های Launchpad',
-      );
-    }
+    return Uint8List.fromList(utf8.encode(buffer.toString()));
   }
 
   String _escapeCsv(String value) {
-    if (value.contains(',') || value.contains('"') || value.contains('\n')) {
+    if (value.contains(',') ||
+        value.contains('"') ||
+        value.contains('\n') ||
+        value.contains('\r')) {
       return '"${value.replaceAll('"', '""')}"';
     }
     return value;
