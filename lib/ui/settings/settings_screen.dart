@@ -247,7 +247,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: ListTile(
               leading: const Icon(Icons.file_download),
               title: const Text(Strings.viewLogs),
-              trailing: const Icon(Icons.chevron_left),
+              // Mirrored under RTL: renders as ← at the row's left edge.
+              trailing: const Icon(Icons.chevron_right),
               onTap: () => _exportCsv(context),
             ),
           ),

@@ -75,21 +75,15 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
         ? '${Strings.weekOf} ${PersianUtils.formatDate(_selectedDate)}'
         : PersianUtils.formatDate(_selectedDate);
 
+    // The chevron icons carry matchTextDirection: true, so Flutter mirrors them
+    // under the app-wide RTL directionality. The constants below therefore look
+    // inverted on purpose: chevron_left renders as a right-pointing arrow and
+    // vice versa. Time reads right-to-left in Farsi, so the left arrow (←)
+    // advances and the right arrow (→) goes back.
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        IconButton(
-          icon: const Icon(Icons.chevron_right),
-          onPressed: () {
-            setState(() {
-              _selectedDate = _weeklyView
-                  ? _selectedDate.add(const Duration(days: 7))
-                  : _selectedDate.add(const Duration(days: 1));
-            });
-          },
-        ),
-        Text(label,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+        // Right edge under RTL, renders as → : previous day/week.
         IconButton(
           icon: const Icon(Icons.chevron_left),
           onPressed: () {
@@ -97,6 +91,19 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
               _selectedDate = _weeklyView
                   ? _selectedDate.subtract(const Duration(days: 7))
                   : _selectedDate.subtract(const Duration(days: 1));
+            });
+          },
+        ),
+        Text(label,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+        // Left edge under RTL, renders as ← : next day/week.
+        IconButton(
+          icon: const Icon(Icons.chevron_right),
+          onPressed: () {
+            setState(() {
+              _selectedDate = _weeklyView
+                  ? _selectedDate.add(const Duration(days: 7))
+                  : _selectedDate.add(const Duration(days: 1));
             });
           },
         ),
