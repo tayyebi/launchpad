@@ -6,7 +6,7 @@ class Strings {
   /// Keep in sync with `version:` in pubspec.yaml and `versionName` in
   /// android/app/build.gradle. Sent along with feedback so a report can be
   /// tied to the build it came from.
-  static const String appVersion = '1.6.2';
+  static const String appVersion = '1.7.0';
 
   static const String summary = 'خلاصه';
   static const String settings = 'تنظیمات';
